@@ -57,7 +57,7 @@
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VOLCÁNICO</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para iniciar escaneo.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Inicie escaneo de terreno.</p>
                 </div>
             </div>
         </div>
@@ -139,11 +139,8 @@
                 }
             });
 
-            if (zonasDetectadas.length > 1) {
-                var tieneALI1 = zonasDetectadas.some(z => z.includes("ALI 1"));
-                if (tieneALI1) {
-                    zonasDetectadas = zonasDetectadas.filter(z => !z.includes("ALI 1"));
-                }
+            if (zonasDetectadas.length > 1 && zonasDetectadas.some(z => z.includes("ALI 1"))) {
+                zonasDetectadas = zonasDetectadas.filter(z => !z.includes("ALI 1"));
             }
 
             zonasDetectadas.forEach(z => {
@@ -159,13 +156,13 @@
                         var casas = 0;
                         layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
                         
-                        // --- FICHA PREDIAL PERSONALIZADA ---
+                        // --- VÍNCULOS DE DATOS ACTUALIZADOS ---
                         html += `<div class="info-card predio-box"><strong style="color:#007d7d;">📑 FICHA PREDIAL</strong><hr>`;
                         
                         html += `<div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${p.ROL || p.Rol || 'N/D'}</span></div>`;
-                        html += `<div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.SECTOR || 'N/D'}</span></div>`;
-                        html += `<div class="data-row"><span class="data-label">APROBACION PERMISO CONSTRUCCIÓN:</span> <span class="data-value">${p.NUMERO_PER || p.Aprobacion || 'N/D'}</span></div>`;
-                        html += `<div class="data-row"><span class="data-label">NUMERO RECEPCIÓN:</span> <span class="data-value">${p.NUMERO_REC || p.Recepcion || 'N/D'}</span></div>`;
+                        html += `<div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.ZONA || p.SECTOR || 'N/D'}</span></div>`;
+                        html += `<div class="data-row"><span class="data-label">APROBACION PERMISO CONSTRUCCIÓN:</span> <span class="data-value">${p.APROBACION || 'N/D'}</span></div>`;
+                        html += `<div class="data-row"><span class="data-label">NUMERO RECEPCIÓN:</span> <span class="data-value">${p.NUMERO_REC || 'N/D'}</span></div>`;
                         
                         html += `<hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">`;
                         html += `<div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
