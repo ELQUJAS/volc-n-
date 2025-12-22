@@ -126,12 +126,16 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // FUNCIÓN PARA BUSCAR DATOS FLEXIBLE (Corrige el error de Numero Rec)
+        // FUNCIÓN MEJORADA: Reemplaza null/vacío por "SIN INFORMACIÓN"
         function getProp(props, keys) {
             for (let k of keys) {
-                if (props[k] !== undefined) return props[k];
+                let val = props[k];
+                // Verifica si el valor existe y no es solo espacios o la palabra 'null'
+                if (val !== undefined && val !== null && String(val).trim() !== "" && String(val).toLowerCase() !== "null") {
+                    return val;
+                }
             }
-            return 'N/D';
+            return "SIN INFORMACIÓN"; // CAMBIO AQUÍ: Reemplaza N/D o null
         }
 
         function triggerScan(latlng) {
@@ -165,13 +169,15 @@
                         var casas = 0;
                         layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
                         
-                        // CORRECCIÓN DE VINCULACIÓN NUMERO RECEPCIÓN
-                        var nRec = getProp(p, ['NUMERO_REC', 'Numero Rec', 'Número Rec', 'NUMERO REC', 'NUMERO_RECEP', 'NUMERO_RE']);
+                        // LÓGICA DE BÚSQUEDA Y LIMPIEZA DE DATOS VACÍOS
+                        var nRec = getProp(p, ['NUMERO_REC', 'Numero Rec', 'Número Rec', 'NUMERO REC', 'NUMERO_RECEP']);
+                        var nAprob = getProp(p, ['APROBACION', 'Aprobacion', 'Aprobación']);
+                        var nSector = getProp(p, ['ZONA', 'Sector', 'Zona', 'zona']);
 
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                             <div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${rol}</span></div>
-                            <div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${getProp(p, ['ZONA', 'Sector', 'Zona', 'zona'])}</span></div>
-                            <div class="data-row"><span class="data-label">APROBACIÓN:</span> <span class="data-value">${getProp(p, ['APROBACION', 'Aprobacion', 'Aprobación'])}</span></div>
+                            <div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${nSector}</span></div>
+                            <div class="data-row"><span class="data-label">APROBACIÓN:</span> <span class="data-value">${nAprob}</span></div>
                             <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span> <span class="data-value">${nRec}</span></div>
                             <hr><div class="data-row"><span class="data-label">VIVIENDAS DETECTADAS EN PREDIO:</span> <span class="data-value">${casas}</span></div></div>`;
                         idsPredio.add(rol);
