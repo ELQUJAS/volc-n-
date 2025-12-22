@@ -22,9 +22,9 @@
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
             
-            .data-row { font-size: 11px; margin: 5px 0; color: #555; display: flex; justify-content: space-between; align-items: center; }
-            .data-label { text-transform: uppercase; font-weight: 600; color: #777; font-size: 10px; }
-            .data-value { color: #000; font-weight: bold; text-align: right; }
+            .data-row { font-size: 11px; margin: 8px 0; color: #555; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
+            .data-label { text-transform: uppercase; font-weight: 800; color: #444; font-size: 10px; margin-bottom: 2px; }
+            .data-value { color: #000; font-weight: bold; font-size: 12px; }
 
             /* --- CLÚSTERES STARK SIN BORDES --- */
             .marker-cluster { background-color: transparent !important; }
@@ -147,7 +147,6 @@
             }
 
             zonasDetectadas.forEach(z => {
-                // CAMBIO SOLICITADO: PELIGRO VOLCÁNICO EN LUGAR DE RIESGO
                 html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong> ${z}</div>`;
             });
 
@@ -159,14 +158,17 @@
                         rolesVistos.add(id);
                         var casas = 0;
                         layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
+                        
+                        // --- FICHA PREDIAL PERSONALIZADA ---
                         html += `<div class="info-card predio-box"><strong style="color:#007d7d;">📑 FICHA PREDIAL</strong><hr>`;
-                        for (var k in p) { 
-                            var key = k.toUpperCase();
-                            if(p[k] && k!=='geometry' && !key.includes("FECHA") && !key.includes("SUPERFICIE") && !key.includes("DESTINO") && !key.includes("RECEPCION") && !key.includes("CONSTRUCI")) {
-                                html += `<div class="data-row"><span class="data-label">${k}:</span> <span class="data-value">${p[k]}</span></div>`;
-                            }
-                        }
-                        html += `<hr><div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
+                        
+                        html += `<div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${p.ROL || p.Rol || 'N/D'}</span></div>`;
+                        html += `<div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.SECTOR || 'N/D'}</span></div>`;
+                        html += `<div class="data-row"><span class="data-label">APROBACION PERMISO CONSTRUCCIÓN:</span> <span class="data-value">${p.NUMERO_PER || p.Aprobacion || 'N/D'}</span></div>`;
+                        html += `<div class="data-row"><span class="data-label">NUMERO RECEPCIÓN:</span> <span class="data-value">${p.NUMERO_REC || p.Recepcion || 'N/D'}</span></div>`;
+                        
+                        html += `<hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">`;
+                        html += `<div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
                     }
                 }
             });
