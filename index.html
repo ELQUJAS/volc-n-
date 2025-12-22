@@ -48,16 +48,13 @@
             }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-            /* DISEÑO LEYENDA ABIERTA */
             .leaflet-control-layers-expanded {
                 padding: 12px;
                 background: #fff;
                 border: 2px solid #00ffcc !important;
                 border-radius: 10px;
-                box-shadow: 0 0 15px rgba(0,0,0,0.2);
                 font-size: 12px;
                 font-weight: bold;
-                color: #333;
             }
         </style>
     </head>
@@ -86,7 +83,6 @@
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
 
-        // Capas
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
@@ -130,25 +126,37 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // Escaneo
+        // MOTOR DE ESCANEO CON PRIORIDAD ANTI-SOLAPAMIENTO
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
-            var idsRiesgo = new Set();
+            var zonasFinales = [];
             var idsPredio = new Set();
 
+            // 1. Recolectar todas las zonas en el punto
             layer_riesgo.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    var desc = l.feature.properties.descriptio;
-                    if (!idsRiesgo.has(desc)) {
-                        var z = desc.toUpperCase();
-                        if (z.includes("ALI 2")) z = "ALI 2: ZONA CON ALTO PELIGRO DE SER AFECTADAS POR LAVAS Y/O LAHARES, DURANTE ERUPCIONES ORIGINADAS EN EL CONO Y/O CRÁTER PRINCIPAL O EN CRÁTERES ADVENTICIOS, TALES COMO LAS OCURRIDAS EN LA PREHISTORIA RECIENTE (< 3700 AÑOS AP) Y DURANTE LOS SIGLOS XVI, XVII, XVIII";
-                        html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${z}</div>`;
-                        idsRiesgo.add(desc);
-                    }
+                    zonasFinales.push(l.feature.properties.descriptio.toUpperCase());
                 }
             });
 
+            // 2. Lógica de Prioridad: Si hay zonas específicas, quitar ALI 1
+            if (zonasFinales.length > 1 && zonasFinales.some(z => z.includes("ALI 1"))) {
+                // Si existe alguna zona que NO sea ALI 1, filtramos ALI 1 para evitar solapamiento visual
+                var zonasEspecificas = zonasFinales.filter(z => !z.includes("ALI 1"));
+                if (zonasEspecificas.length > 0) {
+                    zonasFinales = zonasEspecificas;
+                }
+            }
+
+            // 3. Eliminar duplicados exactos y generar HTML de Riesgos
+            [...new Set(zonasFinales)].forEach(z => {
+                var descFinal = z;
+                if (z.includes("ALI 2")) descFinal = "ALI 2: ZONA CON ALTO PELIGRO DE SER AFECTADAS POR LAVAS Y/O LAHARES, DURANTE ERUPCIONES ORIGINADAS EN EL CONO Y/O CRÁTER PRINCIPAL O EN CRÁTERES ADVENTICIOS, TALES COMO LAS OCURRIDAS EN LA PREHISTORIA RECIENTE (< 3700 AÑOS AP) Y DURANTE LOS SIGLOS XVI, XVII, XVIII";
+                html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${descFinal}</div>`;
+            });
+
+            // 4. Escanear Predios
             layer_predios.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var rol = l.feature.properties.ROL;
@@ -161,7 +169,7 @@
                             <div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.ZONA || 'N/D'}</span></div>
                             <div class="data-row"><span class="data-label">APROBACIÓN:</span> <span class="data-value">${p.APROBACION || 'N/D'}</span></div>
                             <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span> <span class="data-value">${p.NUMERO_REC || 'N/D'}</span></div>
-                            <hr><div class="data-row"><span class="data-label">VIVIENDAS DETECTADAS:</span> <span class="data-value">${casas}</span></div></div>`;
+                            <hr><div class="data-row"><span class="data-label">VIVIENDAS DETECTADAS EN PREDIO:</span> <span class="data-value">${casas}</span></div></div>`;
                         idsPredio.add(rol);
                     }
                 }
@@ -171,15 +179,9 @@
 
         map.on('click', function(e) { triggerScan(e.latlng); });
 
-        // LEYENDA ABIERTA POR DEFECTO
         L.control.layers(
             { "🛰️ Satélite Google": gSat }, 
-            { 
-                "🌋 Peligros Volcánicos": layer_riesgo, 
-                "📏 Predios Rurales": layer_predios, 
-                "🏠 Capa Viviendas": clusterV, 
-                "🟢 Puntos Encuentro (PET)": layer_PET 
-            }, 
+            { "🌋 Peligros Volcánicos": layer_riesgo, "📏 Predios Rurales": layer_predios, "🏠 Capa Viviendas": clusterV, "🟢 Puntos Encuentro (PET)": layer_PET }, 
             { collapsed: false }
         ).addTo(map);
         </script>
