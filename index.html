@@ -26,7 +26,6 @@
             .data-label { text-transform: uppercase; font-weight: 600; color: #777; font-size: 10px; }
             .data-value { color: #000; font-weight: bold; text-align: right; }
 
-            /* CLÚSTERES NÚMEROS BLANCOS BORDE NEGRO */
             .marker-cluster div {
                 width: 36px; height: 36px; line-height: 36px; text-align: center; border-radius: 50%;
                 font-family: "Arial Black", sans-serif; font-size: 14px; font-weight: 900; color: #ffffff !important; 
@@ -36,7 +35,6 @@
             .marker-cluster-medium div { background-color: rgba(255, 165, 0, 0.8) !important; border: 2px solid #fff; }
             .marker-cluster-large div { background-color: rgba(255, 50, 50, 0.8) !important; border: 2px solid #fff; }
 
-            /* PET VERDE CALIPSO CON PERSONAS */
             .leaflet-div-icon { background: transparent !important; border: none !important; }
             .pet-glow-icon { 
                 width: 38px; height: 38px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; 
@@ -57,7 +55,7 @@
             <div id="side-panel">
                 <div class="panel-header">ANÁLISIS DE RIESGO</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">Escaner listo. Haga clic en el mapa.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">Sistema de Gestión Territorial.<br>Haga clic para escanear.</p>
                 </div>
             </div>
         </div>
@@ -76,12 +74,10 @@
         var map = L.map('map', { zoomControl: false, maxZoom: 22 }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-        // MAPAS BASE
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
         var relieve = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 });
 
-        // RIESGOS - COLORES MANUALES BLINDADOS
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
@@ -97,7 +93,6 @@
             }
         }).addTo(map);
 
-        // PET - VERDE CALIPSO CON PERSONAS
         var petIcon = L.divIcon({
             className: 'custom-icon',
             html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
@@ -110,12 +105,16 @@
                 l.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
                     var p = f.properties;
-                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO (PET)</strong><hr><div class="data-row"><span class="data-label">NOMBRE:</span> <span class="data-value">${p.Name || p.Nombre || 'N/D'}</span></div><div class="data-row"><span class="data-label">UBICACIÓN:</span> <span class="data-value">${p.ubicacion || 'VER MAPA'}</span></div></div>`;
+                    document.getElementById('content-display').innerHTML = `
+                        <div class="info-card pet-box">
+                            <strong style="color:#008066; font-size:14px;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr>
+                            <div class="data-row"><span class="data-label">NOMBRE:</span> <span class="data-value">${p.Name || p.Nombre || 'N/D'}</span></div>
+                            <div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${p.descriptio || 'ZONA DE SEGURIDAD'}</span></div>
+                        </div>`;
                 });
             }
         }).addTo(map);
 
-        // VIVIENDAS CLUSTERIZADAS
         var clusterViviendas = L.markerClusterGroup({ maxClusterRadius: 80 });
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: function(f, latlng) {
@@ -124,10 +123,8 @@
         });
         clusterViviendas.addLayer(layer_viviendas).addTo(map);
 
-        // PREDIOS
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, dashArray: "4", fillOpacity: 0 } }).addTo(map);
 
-        // MOTOR DE ESCANEO
         map.on('click', function(e) {
             var pt = [e.latlng.lng, e.latlng.lat];
             var html = "";
@@ -159,7 +156,6 @@
             if(html) document.getElementById('content-display').innerHTML = html;
         });
 
-        // LEYENDA COMPLETA
         L.control.layers({ "🛰️ Satélite": gSat, "🗺️ Calles": osm, "⛰️ Relieve": relieve }, { "🌋 Riesgos": layer_riesgo, "📏 Predios": layer_predios, "🟢 PET": layer_PET, "🏠 Viviendas": clusterViviendas }, { collapsed: false }).addTo(map);
         </script>
     </body>
