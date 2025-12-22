@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <title>Visor Gestión Riesgo Volcánico - Villarrica</title>
+        <title>Visor Gestión Riesgo Volcánico - Villarrica Optimizado</title>
         
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -26,28 +26,33 @@
             .data-label { text-transform: uppercase; font-weight: 800; color: #444; font-size: 10px; margin-bottom: 2px; }
             .data-value { color: #000; font-weight: bold; font-size: 12px; }
 
-            /* --- CLÚSTERES STARK SIN BORDES --- */
-            .marker-cluster { background-color: transparent !important; }
+            /* --- CLÚSTERES REFINADOS Y TRANSLÚCIDOS --- */
+            .marker-cluster { background-color: transparent !important; z-index: 100 !important; } /* Z-index bajo */
+            
             .marker-cluster div {
-                width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 50%;
-                font-family: "Arial Black", sans-serif; font-size: 15px; font-weight: 900; 
-                color: #ffffff !important; border: none !important; 
-                text-shadow: 1px 1px 3px #000;
+                width: 28px; height: 28px; line-height: 28px; text-align: center; border-radius: 50%;
+                font-family: 'Segoe UI', sans-serif; font-size: 11px; font-weight: 600; 
+                color: #ffffff !important; border: 1px solid rgba(255,255,255,0.3) !important;
             }
-            .marker-cluster-small div { background-color: rgba(255, 140, 0, 0.9) !important; box-shadow: 0 0 12px rgba(255, 140, 0, 0.6); }
-            .marker-cluster-medium div { background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 14px rgba(255, 69, 0, 0.7); }
-            .marker-cluster-large div { background-color: rgba(180, 0, 0, 0.98) !important; box-shadow: 0 0 18px rgba(180, 0, 0, 0.8); }
+            .marker-cluster-small div { background-color: rgba(255, 140, 0, 0.5) !important; }
+            .marker-cluster-medium div { background-color: rgba(255, 69, 0, 0.55) !important; }
+            .marker-cluster-large div { background-color: rgba(180, 0, 0, 0.6) !important; }
 
-            /* PET VERDE CALIPSO */
-            .leaflet-div-icon { background: transparent !important; border: none !important; }
+            /* --- PET SUPERIOR Y SÓLIDO --- */
+            .leaflet-div-icon { background: transparent !important; border: none !important; z-index: 1000 !important; } /* Z-index alto */
+            
             .pet-glow-icon { 
-                width: 38px; height: 38px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
+                width: 42px; height: 42px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center;
-                box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8); animation: pet-pulse 2s infinite;
+                box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.9); /* Brillo más fuerte */
+                animation: pet-pulse 2s infinite;
             }
             @keyframes pet-pulse {
-                0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); }
+                0% { transform: scale(1); opacity: 1; } 
+                50% { transform: scale(1.1); opacity: 0.9; } 
+                100% { transform: scale(1); opacity: 1; }
             }
+            
             .leaflet-control-layers { border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); padding: 10px; border: 2px solid #00ffcc; }
         </style>
     </head>
@@ -57,7 +62,7 @@
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VOLCÁNICO</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Inicie escaneo de terreno.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Los PET tienen prioridad visual sobre clústeres.</p>
                 </div>
             </div>
         </div>
@@ -77,9 +82,8 @@
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
-        var relieve = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 });
 
+        // CAPA RIESGOS (Paleta Oficial)
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
@@ -91,18 +95,25 @@
                 else if (d.includes("BLI")) col = "#ffff00";
                 else if (d.includes("AI 1")) col = "#ffdab9";
                 else if (d.includes("AI 2")) col = "#ffffff";
-                return { stroke: true, color: "#666", weight: 0.8, fillColor: col, fillOpacity: 0.5 };
+                return { stroke: true, color: "#666", weight: 0.8, fillColor: col, fillOpacity: 0.4 };
             }
         }).addTo(map);
 
+        // CAPA PET (PERSONAS REUNIDAS - PRIORIDAD ALTA)
         var petIcon = L.divIcon({
-            className: 'custom-icon',
-            html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
-            iconSize: [40, 40], iconAnchor: [20, 20]
+            className: 'custom-icon-pet',
+            html: `<div class="pet-glow-icon">
+                    <svg viewBox="0 0 24 24" width="26" height="26" fill="#000">
+                        <path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/>
+                    </svg>
+                   </div>`,
+            iconSize: [42, 42], iconAnchor: [21, 21]
         });
 
         var layer_PET = L.geoJson(json_PET_5, {
-            pointToLayer: function(f, latlng) { return L.marker(latlng, { icon: petIcon }); },
+            pointToLayer: function(f, latlng) { 
+                return L.marker(latlng, { icon: petIcon, zIndexOffset: 1000 }); 
+            },
             onEachFeature: function(f, l) {
                 l.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
@@ -117,16 +128,30 @@
             }
         }).addTo(map);
 
-        var clusterViviendas = L.markerClusterGroup({ maxClusterRadius: 80, showCoverageOnHover: false });
+        // VIVIENDAS (CLÚSTERES REFINADOS)
+        var clusterViviendas = L.markerClusterGroup({ 
+            maxClusterRadius: 60, 
+            showCoverageOnHover: false,
+            iconCreateFunction: function(cluster) {
+                var childCount = cluster.getChildCount();
+                var c = ' marker-cluster-';
+                if (childCount < 10) { c += 'small'; } 
+                else if (childCount < 100) { c += 'medium'; } 
+                else { c += 'large'; }
+                return new L.DivIcon({ html: '<div><span>' + childCount + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(28, 28) });
+            }
+        });
+        
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: function(f, latlng) {
-                return L.marker(latlng, { icon: L.divIcon({ className: 'custom-icon', html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" stroke="#000" stroke-width="2"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', iconSize: [18, 18], iconAnchor: [9, 9] }) });
+                return L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="14" height="14" fill="#fff" stroke="#000"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', iconSize: [14, 14], iconAnchor: [7, 7] }) });
             }
         });
         clusterViviendas.addLayer(layer_viviendas).addTo(map);
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, dashArray: "4", fillOpacity: 0 } }).addTo(map);
 
+        // MOTOR DE ESCANEO
         map.on('click', function(e) {
             var pt = [e.latlng.lng, e.latlng.lat];
             var html = "";
@@ -134,9 +159,7 @@
             var zonasDetectadas = [];
 
             layer_riesgo.eachLayer(function(l) {
-                if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    zonasDetectadas.push(l.feature.properties.descriptio.toUpperCase());
-                }
+                if (turf.booleanPointInPolygon(pt, l.feature)) zonasDetectadas.push(l.feature.properties.descriptio.toUpperCase());
             });
 
             if (zonasDetectadas.length > 1 && zonasDetectadas.some(z => z.includes("ALI 1"))) {
@@ -155,15 +178,11 @@
                         rolesVistos.add(id);
                         var casas = 0;
                         layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
-                        
-                        // --- VÍNCULOS DE DATOS ACTUALIZADOS ---
                         html += `<div class="info-card predio-box"><strong style="color:#007d7d;">📑 FICHA PREDIAL</strong><hr>`;
-                        
                         html += `<div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${p.ROL || p.Rol || 'N/D'}</span></div>`;
                         html += `<div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.ZONA || p.SECTOR || 'N/D'}</span></div>`;
                         html += `<div class="data-row"><span class="data-label">APROBACION PERMISO CONSTRUCCIÓN:</span> <span class="data-value">${p.APROBACION || 'N/D'}</span></div>`;
                         html += `<div class="data-row"><span class="data-label">NUMERO RECEPCIÓN:</span> <span class="data-value">${p.NUMERO_REC || 'N/D'}</span></div>`;
-                        
                         html += `<hr style="border:0; border-top:1px dashed #ccc; margin:10px 0;">`;
                         html += `<div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
                     }
@@ -172,7 +191,7 @@
             if(html) document.getElementById('content-display').innerHTML = html;
         });
 
-        L.control.layers({ "🛰️ Satélite": gSat, "🗺️ Calles": osm, "⛰️ Relieve": relieve }, { "🌋 Riesgos": layer_riesgo, "📏 Predios": layer_predios, "🟢 PET": layer_PET, "🏠 Viviendas": clusterViviendas }, { collapsed: false }).addTo(map);
+        L.control.layers({ "🛰️ Satélite": gSat }, { "🌋 Riesgos": layer_riesgo, "📏 Predios": layer_predios, "🟢 PET": layer_PET, "🏠 Viviendas": clusterViviendas }, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
