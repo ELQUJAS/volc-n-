@@ -63,7 +63,7 @@
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
         <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script> 
 
         <script src="data/riesgo_volcan_zonas_3.js"></script>
@@ -72,21 +72,21 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- MAPAS BASE GOOGLE (Corregidos) ---
-        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Satélite' });
+        // --- CONFIGURACIÓN DE MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Híbrido' });
+        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Satélite' });
         var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Relieve' });
-        var gRoads = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Calles' });
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OpenStreetMap' });
 
         var map = L.map('map', { 
             zoomControl: false, 
             maxZoom: 22,
-            layers: [gHybrid] // Iniciamos con Híbrido para ver nombres y terreno
+            layers: [gHybrid] 
         }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
 
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-        // --- MOTOR DE ESTILOS ---
+        // --- ESTILOS DE RIESGO ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
@@ -102,6 +102,7 @@
             }
         }).addTo(map);
 
+        // --- ICONO PET ---
         var petIcon = L.divIcon({
             className: 'c-pet',
             html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
@@ -113,11 +114,12 @@
             onEachFeature: function(f, l) {
                 l.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
-                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO (PET)</strong><hr><div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${f.properties.descriptio || 'ZONA SEGURA'}</span></div></div>`;
+                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr><div class="data-row"><span class="data-label">DETALLES TÉCNICOS:</span> <span class="data-value">${f.properties.descriptio || 'ZONA DE SEGURIDAD ESTABLECIDA'}</span></div></div>`;
                 });
             }
         }).addTo(map);
 
+        // --- CAPA VIVIENDAS Y PREDIOS ---
         var clusterV = L.markerClusterGroup({ maxClusterRadius: 120, disableClusteringAtZoom: 18 });
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: function(f, latlng) { 
@@ -128,6 +130,7 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
+        // --- MOTOR DE DATOS ---
         function getProp(props, keys, isNumeroRec = false) {
             for (let k of keys) {
                 let val = props[k];
@@ -156,12 +159,8 @@
 
             var zonaPrioritaria = "";
             var especificas = zonasDetectadas.filter(z => !z.includes("ALI 1"));
-            
-            if (especificas.length > 0) {
-                zonaPrioritaria = especificas[0];
-            } else if (zonasDetectadas.some(z => z.includes("ALI 1"))) {
-                zonaPrioritaria = "ALI 1";
-            }
+            if (especificas.length > 0) zonaPrioritaria = especificas[0];
+            else if (zonasDetectadas.some(z => z.includes("ALI 1"))) zonaPrioritaria = "ALI 1";
 
             if (zonaPrioritaria !== "") {
                 var descFinal = zonaPrioritaria;
@@ -183,7 +182,7 @@
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                             <div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${rol}</span></div>
                             <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span> <span class="data-value">${getProp(p, ['NUMERO_REC'], true)}</span></div>
-                            <hr><div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
+                            <hr><div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span> <span class="data-value">${casas}</span></div></div>`;
                         idsPredio.add(rol);
                     }
                 }
@@ -193,19 +192,19 @@
 
         map.on('click', function(e) { triggerScan(e.latlng); });
 
-        // --- LEYENDA COMPLETA ---
+        // --- LEYENDA DEFINITIVA ---
         var baseMaps = {
-            "🌐 Mapa Híbrido": gHybrid,
-            "🛰️ Satélite Google": gSat,
-            "⛰️ Relieve Topográfico": gTerrain,
-            "🏙️ Mapa de Calles": gRoads
+            "🌐 Google Híbrido": gHybrid,
+            "🛰️ Google Satélite": gSat,
+            "⛰️ Google Relieve": gTerrain,
+            "🗺️ OpenStreetMap": osm
         };
 
         var overlayMaps = {
             "🌋 Peligros Volcánicos": layer_riesgo, 
             "📏 Predios Rurales": layer_predios, 
             "🏠 Capa Viviendas": clusterV, 
-            "🟢 Puntos Encuentro (PET)": layer_PET 
+            "🟢 Punto de Encuentro Transitorio (PET)": layer_PET 
         };
 
         L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
