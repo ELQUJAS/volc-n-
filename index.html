@@ -28,6 +28,7 @@
 
             .leaflet-div-icon { background: transparent !important; border: none !important; }
 
+            /* CLÚSTERES */
             .marker-cluster div {
                 text-align: center; border-radius: 50%;
                 font-family: 'Arial Black', sans-serif; font-weight: 900; color: #fff !important; 
@@ -38,6 +39,7 @@
             .marker-cluster-medium div { width: 42px; height: 42px; background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 15px #ff4500; }
             .marker-cluster-large div { width: 48px; height: 48px; background-color: rgba(180, 0, 0, 1) !important; box-shadow: 0 0 20px #cc0000; }
 
+            /* PET ANIMACIÓN */
             .pet-glow-icon { 
                 width: 40px; height: 40px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center; 
@@ -81,10 +83,20 @@
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
 
+        // MOTOR DE ESTILOS CON GRADIENTE COMPLETA
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
-                var col = d.includes("ALI 1") ? "#ff0000" : d.includes("ALI 2") ? "#cd853f" : d.includes("MLI") ? "#ffae00" : d.includes("MI") ? "#b8860b" : d.includes("BLI") ? "#ffff00" : d.includes("AI 1") ? "#ffdab9" : "#ffffff";
+                var col = "#ffffff";
+                
+                if (d.includes("ALI 1")) col = "#ff0000";      // ROJO
+                else if (d.includes("ALI 2")) col = "#cd853f"; // CAFÉ/NARANJA
+                else if (d.includes("MLI")) col = "#ffae00";   // ÁMBAR
+                else if (d.includes("MI")) col = "#b8860b";    // OCRE
+                else if (d.includes("BLI")) col = "#ffff00";   // AMARILLO
+                else if (d.includes("AI 1")) col = "#ffdab9";  // DAMASCO (NUEVO)
+                else if (d.includes("AI 2")) col = "#e6e6e6";  // GRIS CLARO (NUEVO)
+                
                 return { stroke: true, color: "#fff", weight: 0.5, fillColor: col, fillOpacity: 0.4 };
             }
         }).addTo(map);
@@ -124,19 +136,13 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // FUNCIÓN MEJORADA: Filtra años y limpia datos nulos
         function getProp(props, keys, isNumeroRec = false) {
             for (let k of keys) {
                 let val = props[k];
                 if (val !== undefined && val !== null && String(val).trim() !== "" && String(val).toLowerCase() !== "null") {
-                    
-                    // Lógica específica para Numero Recepción: Eliminar si parece un año
                     if (isNumeroRec) {
                         let num = parseInt(val);
-                        // Si el valor es un número entre 1900 y 2100, se asume que es un año y se filtra
-                        if (!isNaN(num) && num >= 1900 && num <= 2100 && String(val).trim().length === 4) {
-                            continue; 
-                        }
+                        if (!isNaN(num) && num >= 1900 && num <= 2100 && String(val).trim().length === 4) continue; 
                     }
                     return val;
                 }
@@ -175,7 +181,6 @@
                         var casas = 0;
                         layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
                         
-                        // Aplicamos el filtro de años solo a Numero Recepción
                         var nRec = getProp(p, ['NUMERO_REC', 'Numero Rec', 'Número Rec', 'NUMERO REC'], true);
                         var nAprob = getProp(p, ['APROBACION', 'Aprobacion', 'Aprobación']);
                         var nSector = getProp(p, ['ZONA', 'Sector', 'Zona', 'zona']);
