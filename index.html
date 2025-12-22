@@ -26,32 +26,33 @@
             .data-label { text-transform: uppercase; font-weight: 600; color: #777; font-size: 10px; }
             .data-value { color: #000; font-weight: bold; text-align: right; }
 
-            /* --- ESTÉTICA STARK REFINADA (SIN AZUL, SIN MOVIMIENTO) --- */
+            /* --- ESTÉTICA STARK SIN BORDES --- */
             .marker-cluster { background-color: transparent !important; }
             
             .marker-cluster div {
-                width: 40px; height: 40px; line-height: 36px; text-align: center; border-radius: 50%;
+                width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 50%;
                 font-family: "Arial Black", sans-serif; font-size: 15px; font-weight: 900; 
-                color: #ffffff !important; border: 2px solid #ffffff;
-                text-shadow: 1px 1px 2px #000;
+                color: #ffffff !important; 
+                border: none !important; /* ELIMINADO EL BORDE BLANCO */
+                text-shadow: 1px 1px 3px #000;
             }
 
-            /* Nivel Inicial (Naranja Stark - Reemplaza al Azul) */
+            /* Nivel Inicial (Naranja Stark) */
             .marker-cluster-small div { 
-                background-color: rgba(255, 140, 0, 0.85) !important; 
-                box-shadow: 0 0 10px rgba(255, 140, 0, 0.6); 
+                background-color: rgba(255, 140, 0, 0.9) !important; 
+                box-shadow: 0 0 12px rgba(255, 140, 0, 0.6); 
             }
             
             /* Nivel Medio (Naranja Intenso) */
             .marker-cluster-medium div { 
-                background-color: rgba(255, 69, 0, 0.9) !important; 
-                box-shadow: 0 0 12px rgba(255, 69, 0, 0.7); 
+                background-color: rgba(255, 69, 0, 0.95) !important; 
+                box-shadow: 0 0 14px rgba(255, 69, 0, 0.7); 
             }
             
-            /* Nivel Crítico (Rojo Stark - Sin Animación) */
+            /* Nivel Crítico (Rojo Stark) */
             .marker-cluster-large div { 
-                background-color: rgba(180, 0, 0, 0.95) !important; 
-                box-shadow: 0 0 15px rgba(180, 0, 0, 0.8);
+                background-color: rgba(180, 0, 0, 0.98) !important; 
+                box-shadow: 0 0 18px rgba(180, 0, 0, 0.8);
             }
 
             /* PET VERDE CALIPSO */
@@ -73,7 +74,7 @@
             <div id="side-panel">
                 <div class="panel-header">ANÁLISIS DE RIESGO</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA STARK ESTÁTICO.<br>Inicie escaneo de terreno.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA STARK SIN BORDES.<br>Inicie escaneo de terreno.</p>
                 </div>
             </div>
         </div>
