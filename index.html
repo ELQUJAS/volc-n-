@@ -28,32 +28,15 @@
 
             /* --- ESTÉTICA STARK SIN BORDES --- */
             .marker-cluster { background-color: transparent !important; }
-            
             .marker-cluster div {
                 width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 50%;
                 font-family: "Arial Black", sans-serif; font-size: 15px; font-weight: 900; 
-                color: #ffffff !important; 
-                border: none !important; /* ELIMINADO EL BORDE BLANCO */
+                color: #ffffff !important; border: none !important; 
                 text-shadow: 1px 1px 3px #000;
             }
-
-            /* Nivel Inicial (Naranja Stark) */
-            .marker-cluster-small div { 
-                background-color: rgba(255, 140, 0, 0.9) !important; 
-                box-shadow: 0 0 12px rgba(255, 140, 0, 0.6); 
-            }
-            
-            /* Nivel Medio (Naranja Intenso) */
-            .marker-cluster-medium div { 
-                background-color: rgba(255, 69, 0, 0.95) !important; 
-                box-shadow: 0 0 14px rgba(255, 69, 0, 0.7); 
-            }
-            
-            /* Nivel Crítico (Rojo Stark) */
-            .marker-cluster-large div { 
-                background-color: rgba(180, 0, 0, 0.98) !important; 
-                box-shadow: 0 0 18px rgba(180, 0, 0, 0.8);
-            }
+            .marker-cluster-small div { background-color: rgba(255, 140, 0, 0.9) !important; box-shadow: 0 0 12px rgba(255, 140, 0, 0.6); }
+            .marker-cluster-medium div { background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 14px rgba(255, 69, 0, 0.7); }
+            .marker-cluster-large div { background-color: rgba(180, 0, 0, 0.98) !important; box-shadow: 0 0 18px rgba(180, 0, 0, 0.8); }
 
             /* PET VERDE CALIPSO */
             .leaflet-div-icon { background: transparent !important; border: none !important; }
@@ -74,7 +57,7 @@
             <div id="side-panel">
                 <div class="panel-header">ANÁLISIS DE RIESGO</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA STARK SIN BORDES.<br>Inicie escaneo de terreno.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para iniciar escaneo.</p>
                 </div>
             </div>
         </div>
@@ -134,11 +117,7 @@
             }
         }).addTo(map);
 
-        var clusterViviendas = L.markerClusterGroup({ 
-            maxClusterRadius: 80,
-            showCoverageOnHover: false
-        });
-        
+        var clusterViviendas = L.markerClusterGroup({ maxClusterRadius: 80, showCoverageOnHover: false });
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: function(f, latlng) {
                 return L.marker(latlng, { icon: L.divIcon({ className: 'custom-icon', html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" stroke="#000" stroke-width="2"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', iconSize: [18, 18], iconAnchor: [9, 9] }) });
@@ -148,15 +127,34 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, dashArray: "4", fillOpacity: 0 } }).addTo(map);
 
+        // --- LÓGICA DE ESCANEO CON FILTRO DE SOLAPAMIENTO ALI 1 ---
         map.on('click', function(e) {
             var pt = [e.latlng.lng, e.latlng.lat];
             var html = "";
             var rolesVistos = new Set();
+            var zonasDetectadas = [];
 
+            // 1. Recopilar todas las zonas bajo el clic
             layer_riesgo.eachLayer(function(l) {
-                if (turf.booleanPointInPolygon(pt, l.feature)) html += `<div class="info-card riesgo-box"><strong>⚠️ RIESGO:</strong> ${l.feature.properties.descriptio.toUpperCase()}</div>`;
+                if (turf.booleanPointInPolygon(pt, l.feature)) {
+                    zonasDetectadas.push(l.feature.properties.descriptio.toUpperCase());
+                }
             });
 
+            // 2. FILTRAR SOLAPAMIENTO: Si hay más de una zona y una es ALI 1, eliminamos ALI 1
+            if (zonasDetectadas.length > 1) {
+                var tieneALI1 = zonasDetectadas.some(z => z.includes("ALI 1"));
+                if (tieneALI1) {
+                    zonasDetectadas = zonasDetectadas.filter(z => !z.includes("ALI 1"));
+                }
+            }
+
+            // 3. Generar HTML para zonas de riesgo filtradas
+            zonasDetectadas.forEach(z => {
+                html += `<div class="info-card riesgo-box"><strong>⚠️ RIESGO:</strong> ${z}</div>`;
+            });
+
+            // 4. Procesar Predios
             layer_predios.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
