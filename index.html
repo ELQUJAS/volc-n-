@@ -28,7 +28,6 @@
 
             .leaflet-div-icon { background: transparent !important; border: none !important; }
 
-            /* CLÚSTERES */
             .marker-cluster div {
                 text-align: center; border-radius: 50%;
                 font-family: 'Arial Black', sans-serif; font-weight: 900; color: #fff !important; 
@@ -39,7 +38,6 @@
             .marker-cluster-medium div { width: 42px; height: 42px; background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 15px #ff4500; }
             .marker-cluster-large div { width: 48px; height: 48px; background-color: rgba(180, 0, 0, 1) !important; box-shadow: 0 0 20px #cc0000; }
 
-            /* PET ANIMACIÓN */
             .pet-glow-icon { 
                 width: 40px; height: 40px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center; 
@@ -126,16 +124,24 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // FUNCIÓN MEJORADA: Reemplaza null/vacío por "SIN INFORMACIÓN"
-        function getProp(props, keys) {
+        // FUNCIÓN MEJORADA: Filtra años y limpia datos nulos
+        function getProp(props, keys, isNumeroRec = false) {
             for (let k of keys) {
                 let val = props[k];
-                // Verifica si el valor existe y no es solo espacios o la palabra 'null'
                 if (val !== undefined && val !== null && String(val).trim() !== "" && String(val).toLowerCase() !== "null") {
+                    
+                    // Lógica específica para Numero Recepción: Eliminar si parece un año
+                    if (isNumeroRec) {
+                        let num = parseInt(val);
+                        // Si el valor es un número entre 1900 y 2100, se asume que es un año y se filtra
+                        if (!isNaN(num) && num >= 1900 && num <= 2100 && String(val).trim().length === 4) {
+                            continue; 
+                        }
+                    }
                     return val;
                 }
             }
-            return "SIN INFORMACIÓN"; // CAMBIO AQUÍ: Reemplaza N/D o null
+            return "SIN INFORMACIÓN";
         }
 
         function triggerScan(latlng) {
@@ -169,8 +175,8 @@
                         var casas = 0;
                         layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
                         
-                        // LÓGICA DE BÚSQUEDA Y LIMPIEZA DE DATOS VACÍOS
-                        var nRec = getProp(p, ['NUMERO_REC', 'Numero Rec', 'Número Rec', 'NUMERO REC', 'NUMERO_RECEP']);
+                        // Aplicamos el filtro de años solo a Numero Recepción
+                        var nRec = getProp(p, ['NUMERO_REC', 'Numero Rec', 'Número Rec', 'NUMERO REC'], true);
                         var nAprob = getProp(p, ['APROBACION', 'Aprobacion', 'Aprobación']);
                         var nSector = getProp(p, ['ZONA', 'Sector', 'Zona', 'zona']);
 
