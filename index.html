@@ -3,51 +3,54 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <title>SISTEMA GESTIÓN RIESGO - VILLARRICA</title>
+        <title>Visor Gestión Riesgo Volcánico - Villarrica</title>
         
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
         
         <style>
-            html, body { height: 100%; margin: 0; background: #000; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+            html, body { height: 100%; margin: 0; background: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
             #main-container { display: flex; height: 100%; width: 100%; }
-            #map { flex-grow: 1; height: 100%; background: #1a1a1a; }
+            #map { flex-grow: 1; height: 100%; background: #e0e0e0; }
             
-            #side-panel { width: 380px; background: #ffffff; border-left: 3px solid #00ffcc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -5px 0 20px rgba(0,0,0,0.5); }
-            .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 18px; text-align: center; }
+            #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+            .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 15px; margin-bottom: 20px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 18px; text-align: center; }
             
-            #coords-hud { position: absolute; bottom: 30px; left: 20px; background: rgba(0, 0, 0, 0.85); color: #00ffcc; padding: 12px; border-radius: 6px; border: 1px solid #00ffcc; font-family: monospace; font-size: 12px; z-index: 1000; pointer-events: none; line-height: 1.6; }
-
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
+            .pet-box { border-left-color: #00ffcc; background: #f0fffb; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
-            .pet-box { border-left-color: #00ffcc; background: #f0fffb; }
             
-            .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
-            .data-label { text-transform: uppercase; font-weight: 800; color: #666; font-size: 9px; }
-            .data-value { color: #000; font-weight: bold; font-size: 12px; }
+            .data-row { font-size: 11px; margin: 5px 0; color: #555; display: flex; justify-content: space-between; align-items: center; }
+            .data-label { text-transform: uppercase; font-weight: 600; color: #777; font-size: 10px; }
+            .data-value { color: #000; font-weight: bold; text-align: right; }
 
-            /* CLÚSTERES STARK SIN BORDES */
+            /* --- CLÚSTERES ESTÉTICOS (SIN AZUL, SIN MOVIMIENTO) --- */
+            .marker-cluster { background-color: transparent !important; }
             .marker-cluster div {
-                text-align: center; border-radius: 50%;
-                font-family: 'Arial Black', sans-serif; font-weight: 900; color: #fff !important; 
-                text-shadow: 1px 1px 3px #000; display: flex; align-items: center; justify-content: center;
+                width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 50%;
+                font-family: "Arial Black", sans-serif; font-size: 15px; font-weight: 900; 
+                color: #ffffff !important; border: none !important; 
+                text-shadow: 1px 1px 3px #000;
             }
-            .marker-cluster-small div { width: 45px; height: 45px; background-color: rgba(255, 140, 0, 0.9) !important; box-shadow: 0 0 15px #ff8c00; }
-            .marker-cluster-medium div { width: 55px; height: 55px; background-color: rgba(255, 69, 0, 0.9) !important; box-shadow: 0 0 20px #ff4500; }
-            .marker-cluster-large div { width: 65px; height: 65px; background-color: rgba(200, 0, 0, 0.9) !important; box-shadow: 0 0 25px #cc0000; }
+            .marker-cluster-small div { background-color: rgba(255, 140, 0, 0.9) !important; box-shadow: 0 0 12px rgba(255, 140, 0, 0.6); }
+            .marker-cluster-medium div { background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 14px rgba(255, 69, 0, 0.7); }
+            .marker-cluster-large div { background-color: rgba(180, 0, 0, 0.98) !important; box-shadow: 0 0 18px rgba(180, 0, 0, 0.8); }
 
             /* PET VERDE CALIPSO */
-            .pet-glow-icon { width: 42px; height: 42px; background: #00ffcc; border: 3px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8); }
-            
-            .leaflet-control-layers { border-radius: 8px; box-shadow: 0 2px 15px rgba(0,0,0,0.4); padding: 10px; border: 2px solid #00ffcc; }
+            .leaflet-div-icon { background: transparent !important; border: none !important; }
+            .pet-glow-icon { 
+                width: 38px; height: 38px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
+                display: flex; align-items: center; justify-content: center;
+                box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8);
+            }
+            .leaflet-control-layers { border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2); padding: 10px; border: 2px solid #00ffcc; }
         </style>
     </head>
     <body>
         <div id="main-container">
             <div id="map"></div>
-            <div id="coords-hud">LAT: -- | LNG: --<br>UTM: --</div>
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VOLCÁNICO</div>
                 <div id="content-display">
@@ -56,10 +59,9 @@
             </div>
         </div>
 
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
         <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
-        <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script>
-        <script src="https://cdn.jsdelivr.net/npm/utm-latlng@1.0.5/utm-latlng.min.js"></script>
+        <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script> 
 
         <script src="data/riesgo_volcan_zonas_3.js"></script>
         <script src="data/subdivisionesriesgovolcanico_4.js"></script>
@@ -67,18 +69,11 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        var map = L.map('map', { zoomControl: false, maxZoom: 22 }).setView([-39.33, -72.15], 13);
+        var map = L.map('map', { zoomControl: false, maxZoom: 22 }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
-        var utm = new UtmLatLng();
 
-        map.on('mousemove', function(e) {
-            var lat = e.latlng.lat.toFixed(6);
-            var lng = e.latlng.lng.toFixed(6);
-            var u = utm.convertLatLngToUtm(e.latlng.lat, e.latlng.lng, 18);
-            document.getElementById('coords-hud').innerHTML = `LAT: ${lat}  LNG: ${lng}<br>UTM: ${Math.round(u.Easting)} E | ${Math.round(u.Northing)} N (18S)`;
-        });
-
-        // CAPA RIESGOS
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
@@ -90,59 +85,58 @@
                 else if (d.includes("BLI")) col = "#ffff00";
                 else if (d.includes("AI 1")) col = "#ffdab9";
                 else if (d.includes("AI 2")) col = "#ffffff";
-                return { stroke: true, color: "#fff", weight: 0.5, fillColor: col, fillOpacity: 0.4 };
+                return { stroke: true, color: "#666", weight: 0.8, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
-        // CAPA PET
         var petIcon = L.divIcon({
-            className: 'c-pet',
-            html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="28" height="28" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
-            iconSize: [42, 42], iconAnchor: [21, 21]
+            className: 'custom-icon',
+            html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="24" height="24" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
+            iconSize: [40, 40], iconAnchor: [20, 20]
         });
 
         var layer_PET = L.geoJson(json_PET_5, {
-            pointToLayer: function(f, latlng) { return L.marker(latlng, { icon: petIcon, zIndexOffset: 5000 }); },
+            pointToLayer: function(f, latlng) { return L.marker(latlng, { icon: petIcon }); },
             onEachFeature: function(f, l) {
                 l.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
-                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr><div class="data-row"><span class="data-label">NOMBRE:</span> <span class="data-value">${f.properties.Name || f.properties.Nombre || 'N/D'}</span></div><div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${f.properties.descriptio || 'ZONA SEGURA'}</span></div></div>`;
+                    var p = f.properties;
+                    document.getElementById('content-display').innerHTML = `
+                        <div class="info-card pet-box">
+                            <strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr>
+                            <div class="data-row"><span class="data-label">NOMBRE:</span> <span class="data-value">${p.Name || p.Nombre || 'N/D'}</span></div>
+                            <div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${p.descriptio || 'ZONA DE SEGURIDAD'}</span></div>
+                        </div>`;
                 });
             }
         }).addTo(map);
 
-        // CAPA VIVIENDAS (CLÚSTERES GIGANTES)
-        var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 50, 
-            iconCreateFunction: function(cluster) {
-                var count = cluster.getChildCount();
-                var c = ' marker-cluster-' + (count < 20 ? 'small' : count < 150 ? 'medium' : 'large');
-                return new L.DivIcon({ html: '<div><span>' + count + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(50, 50) });
+        var clusterViviendas = L.markerClusterGroup({ maxClusterRadius: 80, showCoverageOnHover: false });
+        var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
+            pointToLayer: function(f, latlng) {
+                return L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" stroke="#000" stroke-width="2"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', iconSize: [18, 18] }) });
             }
         });
-        var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
-            pointToLayer: function(f, latlng) { return L.marker(latlng, { icon: L.divIcon({ html: '🏠', iconSize: [16, 16] }) }); }
-        });
-        clusterV.addLayer(layer_viviendas).addTo(map);
+        clusterViviendas.addLayer(layer_viviendas).addTo(map);
 
-        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
+        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, dashArray: "4", fillOpacity: 0 } }).addTo(map);
 
-        // MOTOR ESCANEO
         map.on('click', function(e) {
             var pt = [e.latlng.lng, e.latlng.lat];
             var html = "";
-            var zonas = [];
+            var zonasDetectadas = [];
 
             layer_riesgo.eachLayer(function(l) {
-                if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    var z = l.feature.properties.descriptio.toUpperCase();
-                    if (z.includes("ALI 2")) z = "ALI 2: ZONA CON ALTO PELIGRO DE SER AFECTADAS POR LAVAS Y/O LAHARES, DURANTE ERUPCIONES ORIGINADAS EN EL CONO Y/O CRÁTER PRINCIPAL O EN CRÁTERES ADVENTICIOS, TALES COMO LAS OCURRIDAS EN LA PREHISTORIA RECIENTE (< 3700 AÑOS AP) Y DURANTE LOS SIGLOS XVI, XVII, XVIII";
-                    zonas.push(z);
-                }
+                if (turf.booleanPointInPolygon(pt, l.feature)) zonasDetectadas.push(l.feature.properties.descriptio.toUpperCase());
             });
 
-            if (zonas.length > 1 && zonas.some(z => z.includes("ALI 1"))) zonas = zonas.filter(z => !z.includes("ALI 1"));
-            zonas.forEach(z => html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${z}</div>`);
+            if (zonasDetectadas.length > 1 && zonasDetectadas.some(z => z.includes("ALI 1"))) {
+                zonasDetectadas = zonasDetectadas.filter(z => !z.includes("ALI 1"));
+            }
+
+            zonasDetectadas.forEach(z => {
+                html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong> ${z}</div>`;
+            });
 
             layer_predios.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
@@ -152,15 +146,13 @@
                     html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                         <div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${p.ROL || 'N/D'}</span></div>
                         <div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.ZONA || 'N/D'}</span></div>
-                        <div class="data-row"><span class="data-label">APROBACIÓN:</span> <span class="data-value">${p.APROBACION || 'N/D'}</span></div>
-                        <div class="data-row"><span class="data-label">NUMERO REC:</span> <span class="data-value">${p.NUMERO_REC || 'N/D'}</span></div>
-                        <hr><div class="data-row"><span class="data-label">VIVIENDAS DETECTADAS:</span> <span class="data-value">${casas}</span></div></div>`;
+                        <hr><div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
                 }
             });
-            document.getElementById('content-display').innerHTML = html || "Sin datos en este punto.";
+            if(html) document.getElementById('content-display').innerHTML = html;
         });
 
-        L.control.layers({ "🛰️ Satélite": gSat }, { "🌋 Peligros": layer_riesgo, "📏 Predios": layer_predios, "🟢 PET": layer_PET, "🏠 Viviendas": clusterV }, { collapsed: false }).addTo(map);
+        L.control.layers({ "Satélite": gSat }, { "Peligros": layer_riesgo, "Predios": layer_predios, "PET": layer_PET, "Viviendas": clusterViviendas }, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
