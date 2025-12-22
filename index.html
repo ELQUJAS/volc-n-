@@ -28,7 +28,6 @@
 
             .leaflet-div-icon { background: transparent !important; border: none !important; }
 
-            /* CLÚSTERES */
             .marker-cluster div {
                 text-align: center; border-radius: 50%;
                 font-family: 'Arial Black', sans-serif; font-weight: 900; color: #fff !important; 
@@ -40,7 +39,7 @@
             .marker-cluster-large div { width: 48px; height: 48px; background-color: rgba(180, 0, 0, 1) !important; }
 
             .pet-glow-icon { 
-                width: 32px; height: 32px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; 
+                width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center; 
                 box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8); 
                 animation: pet-pulse 1.2s infinite; 
@@ -73,15 +72,16 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- MAPAS BASE ---
-        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Satellite' });
-        var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Hybrid' });
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OpenStreetMap' });
+        // --- MAPAS BASE GOOGLE (Corregidos) ---
+        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Satélite' });
+        var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Híbrido' });
+        var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Relieve' });
+        var gRoads = L.tileLayer('https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Calles' });
 
         var map = L.map('map', { 
             zoomControl: false, 
             maxZoom: 22,
-            layers: [gSat] // Mapa por defecto
+            layers: [gHybrid] // Iniciamos con Híbrido para ver nombres y terreno
         }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
 
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
@@ -128,7 +128,6 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- FUNCIONES DE APOYO ---
         function getProp(props, keys, isNumeroRec = false) {
             for (let k of keys) {
                 let val = props[k];
@@ -143,7 +142,6 @@
             return "SIN INFORMACIÓN";
         }
 
-        // --- MOTOR DE ESCANEO CON PRIORIDAD Y DEFINICIÓN DE ALI 1 ---
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
@@ -167,7 +165,6 @@
 
             if (zonaPrioritaria !== "") {
                 var descFinal = zonaPrioritaria;
-                // --- DEFINICIONES TÉCNICAS ---
                 if (zonaPrioritaria.includes("ALI 1")) {
                     descFinal = "ALI 1: ÁREA CON MUY ALTO PELIGRO DE SER AFECTADA POR FLUJOS DE LAVA Y/O LAHARES. CORRESPONDE A CAUCES Y ZONAS DE DEPÓSITO DE EVENTOS RECIENTES (SIGLOS XIX Y XX).";
                 } else if (zonaPrioritaria.includes("ALI 2")) {
@@ -196,11 +193,12 @@
 
         map.on('click', function(e) { triggerScan(e.latlng); });
 
-        // --- LEYENDA TOTAL ---
+        // --- LEYENDA COMPLETA ---
         var baseMaps = {
-            "🛰️ Satélite Google": gSat,
             "🌐 Mapa Híbrido": gHybrid,
-            "🗺️ Mapa Simple (OSM)": osm
+            "🛰️ Satélite Google": gSat,
+            "⛰️ Relieve Topográfico": gTerrain,
+            "🏙️ Mapa de Calles": gRoads
         };
 
         var overlayMaps = {
