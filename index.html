@@ -78,12 +78,7 @@
         var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Relieve' });
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OpenStreetMap' });
 
-        var map = L.map('map', { 
-            zoomControl: false, 
-            maxZoom: 22,
-            layers: [gHybrid] 
-        }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
-
+        var map = L.map('map', { zoomControl: false, maxZoom: 22, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
         // --- CAPA RIESGO ---
@@ -114,7 +109,7 @@
             onEachFeature: function(f, l) {
                 l.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
-                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr><div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${f.properties.descriptio || 'ZONA DE SEGURIDAD'}</span></div></div>`;
+                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr><div class="data-row"><span class="data-label">DETALLES TÉCNICOS:</span> <span class="data-value">${f.properties.descriptio || 'ZONA DE SEGURIDAD'}</span></div></div>`;
                 });
             }
         }).addTo(map);
@@ -131,7 +126,7 @@
         // --- CAPA PREDIOS ---
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- FUNCIONES DE DATOS ---
+        // --- MOTOR DE DATOS RESTAURADO ---
         function getProp(props, keys, isNumeroRec = false) {
             for (let k of keys) {
                 let val = props[k];
@@ -180,10 +175,18 @@
                     if (!idsPredio.has(rol)) {
                         var casas = 0;
                         layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
+                        
+                        // RESTAURACIÓN DE TODOS LOS CAMPOS
+                        var nSector = getProp(p, ['ZONA', 'Sector', 'Zona']);
+                        var nAprob = getProp(p, ['APROBACION', 'Aprobacion', 'Aprobación']);
+                        var nRec = getProp(p, ['NUMERO_REC', 'Numero Rec'], true);
+
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                             <div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${rol}</span></div>
-                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span> <span class="data-value">${getProp(p, ['NUMERO_REC'], true)}</span></div>
-                            <hr><div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
+                            <div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${nSector}</span></div>
+                            <div class="data-row"><span class="data-label">APROBACIÓN PERMISO EDIFICACIÓN:</span> <span class="data-value">${nAprob}</span></div>
+                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span> <span class="data-value">${nRec}</span></div>
+                            <hr><div class="data-row"><span class="data-label">VIVIENDAS DETECTADAS EN PREDIO:</span> <span class="data-value">${casas}</span></div></div>`;
                         idsPredio.add(rol);
                     }
                 }
@@ -193,22 +196,10 @@
 
         map.on('click', function(e) { triggerScan(e.latlng); });
 
-        // --- LEYENDA DEFINITIVA ---
-        L.control.layers(
-            { 
-                "🌐 Google Híbrido": gHybrid, 
-                "🛰️ Google Satélite": gSat, 
-                "⛰️ Google Relieve": gTerrain, 
-                "🗺️ OpenStreetMap": osm 
-            }, 
-            { 
-                "🌋 Peligros Volcánicos": layer_riesgo, 
-                "📏 Predios Rurales": layer_predios, 
-                "🏠 Capa Viviendas": clusterV, 
-                "🟢 Punto de Encuentro Transitorio (PET)": layer_PET 
-            }, 
-            { collapsed: false }
-        ).addTo(map);
+        // --- LEYENDA TOTAL ---
+        var baseMaps = { "🌐 Google Híbrido": gHybrid, "🛰️ Google Satélite": gSat, "⛰️ Google Relieve": gTerrain, "🗺️ OpenStreetMap": osm };
+        var overlayMaps = { "🌋 Peligros Volcánicos": layer_riesgo, "📏 Predios Rurales": layer_predios, "🏠 Capa Viviendas": clusterV, "🟢 Punto de Encuentro Transitorio (PET)": layer_PET };
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
