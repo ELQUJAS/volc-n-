@@ -26,18 +26,21 @@
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; margin-bottom: 2px; }
             .data-value { color: #000; font-weight: bold; font-size: 11px; line-height: 1.4; }
 
-            /* --- CLÚSTERES STARK REFINADOS --- */
+            /* ELIMINAR FONDOS DE ICONOS */
+            .leaflet-div-icon { background: transparent !important; border: none !important; }
+
+            /* CLÚSTERES */
             .marker-cluster div {
                 text-align: center; border-radius: 50%;
                 font-family: 'Arial Black', sans-serif; font-weight: 900; color: #fff !important; 
                 text-shadow: 1px 1px 3px #000; display: flex; align-items: center; justify-content: center;
                 border: 2px solid white !important;
             }
-            .marker-cluster-small div { width: 35px; height: 35px; background-color: rgba(255, 140, 0, 0.9) !important; box-shadow: 0 0 10px #ff8c00; }
-            .marker-cluster-medium div { width: 40px; height: 40px; background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 15px #ff4500; }
-            .marker-cluster-large div { width: 45px; height: 45px; background-color: rgba(180, 0, 0, 1) !important; box-shadow: 0 0 20px #cc0000; }
+            .marker-cluster-small div { width: 38px; height: 38px; background-color: rgba(255, 140, 0, 0.9) !important; box-shadow: 0 0 10px #ff8c00; }
+            .marker-cluster-medium div { width: 42px; height: 42px; background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 15px #ff4500; }
+            .marker-cluster-large div { width: 48px; height: 48px; background-color: rgba(180, 0, 0, 1) !important; box-shadow: 0 0 20px #cc0000; }
 
-            /* PET VERDE CALIPSO */
+            /* PET ANIMACIÓN */
             .pet-glow-icon { 
                 width: 40px; height: 40px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center; 
@@ -46,20 +49,16 @@
             }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-            /* LEYENDA PERSONALIZADA */
-            .legend-panel { background: white; padding: 10px; line-height: 18px; color: #333; border: 2px solid #00ffcc; border-radius: 8px; font-size: 11px; box-shadow: 0 0 15px rgba(0,0,0,0.2); }
-            .legend-item { display: flex; align-items: center; margin-bottom: 4px; }
-            .legend-color { width: 14px; height: 14px; border-radius: 3px; margin-right: 8px; border: 1px solid #666; }
-            .legend-circle { width: 14px; height: 14px; border-radius: 50%; margin-right: 8px; border: 1px solid #fff; }
+            .leaflet-control-layers { border: 2px solid #00ffcc; border-radius: 8px; font-weight: bold; }
         </style>
     </head>
     <body>
         <div id="main-container">
             <div id="map"></div>
             <div id="side-panel">
-                <div class="panel-header">GESTIÓN RIESGO VOLCÁNICO</div>
+                <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para iniciar escaneo.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear.</p>
                 </div>
             </div>
         </div>
@@ -78,7 +77,6 @@
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
 
-        // CAPA RIESGOS
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
@@ -87,7 +85,6 @@
             }
         }).addTo(map);
 
-        // CAPA PET (ICONO PERSONAS)
         var petIcon = L.divIcon({
             className: 'c-pet',
             html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
@@ -99,84 +96,77 @@
             onEachFeature: function(f, l) {
                 l.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
-                    // AJUSTE: SOLO DETALLES
                     document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr><div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${f.properties.descriptio || 'ZONA SEGURA'}</span></div></div>`;
                 });
             }
         }).addTo(map);
 
-        // CLUSTERS Y VIVIENDA (SÍMBOLO BLANCO)
         var clusterV = L.markerClusterGroup({ 
             maxClusterRadius: 50,
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var c = ' marker-cluster-' + (count < 20 ? 'small' : count < 150 ? 'medium' : 'large');
-                return new L.DivIcon({ html: '<div><span>' + count + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(38, 38) });
+                return new L.DivIcon({ html: '<div><span>' + count + '</span></div>', className: 'marker-cluster' + c, iconSize: new L.Point(40, 40) });
             }
         });
+        
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: function(f, latlng) { 
-                return L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="20" height="20" fill="#fff" stroke="#000" stroke-width="1.5"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', iconSize: [20, 20] }) }); 
+                return L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22" fill="#fff" stroke="#000" stroke-width="2"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>', iconSize: [22, 22] }) }); 
             }
         });
         clusterV.addLayer(layer_viviendas).addTo(map);
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // MOTOR ESCANEO
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
-            var zonas = [];
+            var idsRiesgo = new Set();
+            var idsPredio = new Set();
+
+            // Escanear Riesgos con filtro de duplicados
             layer_riesgo.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    var z = l.feature.properties.descriptio.toUpperCase();
-                    if (z.includes("ALI 2")) z = "ALI 2: ZONA CON ALTO PELIGRO DE SER AFECTADAS POR LAVAS Y/O LAHARES, DURANTE ERUPCIONES ORIGINADAS EN EL CONO Y/O CRÁTER PRINCIPAL O EN CRÁTERES ADVENTICIOS, TALES COMO LAS OCURRIDAS EN LA PREHISTORIA RECIENTE (< 3700 AÑOS AP) Y DURANTE LOS SIGLOS XVI, XVII, XVIII";
-                    zonas.push(z);
+                    var desc = l.feature.properties.descriptio;
+                    if (!idsRiesgo.has(desc)) {
+                        var z = desc.toUpperCase();
+                        if (z.includes("ALI 2")) z = "ALI 2: ZONA CON ALTO PELIGRO DE SER AFECTADAS POR LAVAS Y/O LAHARES...";
+                        html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${z}</div>`;
+                        idsRiesgo.add(desc);
+                    }
                 }
             });
-            if (zonas.length > 1 && zonas.some(z => z.includes("ALI 1"))) zonas = zonas.filter(z => !z.includes("ALI 1"));
-            zonas.forEach(z => html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${z}</div>`);
-            
+
+            // Escanear Predios con filtro de duplicados
             layer_predios.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    var p = l.feature.properties;
-                    var casas = 0;
-                    layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
-                    html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
-                        <div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${p.ROL || 'N/D'}</span></div>
-                        <div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.ZONA || 'N/D'}</span></div>
-                        <div class="data-row"><span class="data-label">APROBACIÓN:</span> <span class="data-value">${p.APROBACION || 'N/D'}</span></div>
-                        <div class="data-row"><span class="data-label">NUMERO REC:</span> <span class="data-value">${p.NUMERO_REC || 'N/D'}</span></div>
-                        <hr><div class="data-row"><span class="data-label">VIVIENDAS:</span> <span class="data-value">${casas}</span></div></div>`;
+                    var rol = l.feature.properties.ROL;
+                    if (!idsPredio.has(rol)) {
+                        var p = l.feature.properties;
+                        var casas = 0;
+                        layer_viviendas.eachLayer(function(v) { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
+                        html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
+                            <div class="data-row"><span class="data-label">ROL:</span> <span class="data-value">${p.ROL || 'N/D'}</span></div>
+                            <div class="data-row"><span class="data-label">SECTOR:</span> <span class="data-value">${p.ZONA || 'N/D'}</span></div>
+                            <div class="data-row"><span class="data-label">APROBACIÓN:</span> <span class="data-value">${p.APROBACION || 'N/D'}</span></div>
+                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span> <span class="data-value">${p.NUMERO_REC || 'N/D'}</span></div>
+                            <hr><div class="data-row"><span class="data-label">VIVIENDAS DETECTADAS:</span> <span class="data-value">${casas}</span></div></div>`;
+                        idsPredio.add(rol);
+                    }
                 }
             });
-            if(html) document.getElementById('content-display').innerHTML = html;
+            document.getElementById('content-display').innerHTML = html || "Sin datos en esta ubicación.";
         }
 
         map.on('click', function(e) { triggerScan(e.latlng); });
 
-        // LEYENDA MANUAL COMPLETA
-        var legend = L.control({ position: 'topright' });
-        legend.onAdd = function (map) {
-            var div = L.DomUtil.create('div', 'legend-panel');
-            div.innerHTML = `
-                <b>SIMBOLOGÍA</b><br>
-                <div class="legend-item"><div class="legend-color" style="background:#ff0000"></div> ALI 1 (Muy Alto)</div>
-                <div class="legend-item"><div class="legend-color" style="background:#cd853f"></div> ALI 2 (Lavas/Lahares)</div>
-                <div class="legend-item"><div class="legend-color" style="background:#ffae00"></div> MLI (Moderado)</div>
-                <div class="legend-item"><div class="legend-color" style="background:#ffff00"></div> BLI (Bajo)</div>
-                <hr>
-                <div class="legend-item"><div class="legend-color" style="border: 1px dashed #666; background:transparent"></div> Predios Rurales</div>
-                <div class="legend-item"><svg width="14" height="14" viewBox="0 0 24 24" fill="#fff" stroke="#000" style="margin-right:8px;"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg> Vivienda Individual</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#ff8c00"></div> Clúster Viviendas</div>
-                <div class="legend-item"><div class="legend-circle" style="background:#00ffcc; box-shadow:0 0 5px #00ffcc"></div> Punto Encuentro (PET)</div>
-            `;
-            return div;
-        };
-        legend.addTo(map);
-
-        L.control.layers({ "Satélite": gSat }, { "Peligros": layer_riesgo, "Predios": layer_predios, "Viviendas": clusterV, "PET": layer_PET }, { collapsed: false }).addTo(map);
+        L.control.layers({ "Satélite": gSat }, { 
+            "🌋 Peligros Volcánicos": layer_riesgo, 
+            "📏 Predios Rurales": layer_predios, 
+            "🏠 Viviendas": clusterV, 
+            "🟢 PET": layer_PET 
+        }, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
