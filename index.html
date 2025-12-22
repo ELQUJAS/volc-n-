@@ -3,7 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="initial-scale=1,user-scalable=no,maximum-scale=1,width=device-width">
-        <title>Visor Gestión Riesgo Volcánico - Villarrica Final</title>
+        <title>Visor Gestión Riesgo Volcánico - Villarrica</title>
         
         <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.css" />
@@ -15,8 +15,6 @@
             #map { flex-grow: 1; height: 100%; background: #e0e0e0; }
             
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
-            
-            /* TÍTULO ACTUALIZADO */
             .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 15px; margin-bottom: 20px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 18px; text-align: center; }
             
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
@@ -149,7 +147,8 @@
             }
 
             zonasDetectadas.forEach(z => {
-                html += `<div class="info-card riesgo-box"><strong>⚠️ RIESGO:</strong> ${z}</div>`;
+                // CAMBIO SOLICITADO: PELIGRO VOLCÁNICO EN LUGAR DE RIESGO
+                html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong> ${z}</div>`;
             });
 
             layer_predios.eachLayer(function(l) {
