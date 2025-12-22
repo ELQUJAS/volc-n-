@@ -20,6 +20,7 @@
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
+            .pet-box { border-left-color: #00ffcc; background: #f0fffb; }
             
             .data-row { font-size: 11px; margin: 8px 0; color: #333; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; margin-bottom: 2px; }
@@ -27,23 +28,28 @@
 
             .leaflet-div-icon { background: transparent !important; border: none !important; }
 
+            /* CLÚSTERES */
             .marker-cluster div {
                 text-align: center; border-radius: 50%;
                 font-family: 'Arial Black', sans-serif; font-weight: 900; color: #fff !important; 
                 text-shadow: 1px 1px 3px #000; display: flex; align-items: center; justify-content: center;
                 border: 2px solid white !important;
             }
-            .marker-cluster-small div { width: 38px; height: 38px; background-color: rgba(255, 140, 0, 0.9) !important; box-shadow: 0 0 10px #ff8c00; }
-            .marker-cluster-medium div { width: 42px; height: 42px; background-color: rgba(255, 69, 0, 0.95) !important; box-shadow: 0 0 15px #ff4500; }
-            .marker-cluster-large div { width: 48px; height: 48px; background-color: rgba(180, 0, 0, 1) !important; box-shadow: 0 0 20px #cc0000; }
+            .marker-cluster-small div { width: 38px; height: 38px; background-color: rgba(255, 140, 0, 0.9) !important; }
+            .marker-cluster-medium div { width: 42px; height: 42px; background-color: rgba(255, 69, 0, 0.95) !important; }
+            .marker-cluster-large div { width: 48px; height: 48px; background-color: rgba(180, 0, 0, 1) !important; }
 
             .pet-glow-icon { 
-                width: 40px; height: 40px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
+                width: 32px; height: 32px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center; 
                 box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8); 
                 animation: pet-pulse 1.2s infinite; 
             }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+
+            .leaflet-control-layers-expanded {
+                padding: 12px; background: #fff; border: 2px solid #00ffcc !important; border-radius: 10px; font-size: 12px; font-weight: bold;
+            }
         </style>
     </head>
     <body>
@@ -67,11 +73,20 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        var map = L.map('map', { zoomControl: false, maxZoom: 22 }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
-        L.control.zoom({ position: 'bottomleft' }).addTo(map);
-        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 }).addTo(map);
+        // --- MAPAS BASE ---
+        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Satellite' });
+        var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Hybrid' });
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: 'OpenStreetMap' });
 
-        // MOTOR DE ESTILOS
+        var map = L.map('map', { 
+            zoomControl: false, 
+            maxZoom: 22,
+            layers: [gSat] // Mapa por defecto
+        }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
+
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
+
+        // --- MOTOR DE ESTILOS ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
@@ -89,8 +104,8 @@
 
         var petIcon = L.divIcon({
             className: 'c-pet',
-            html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="26" height="26" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
-            iconSize: [42, 42], iconAnchor: [21, 21]
+            html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="#000"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
+            iconSize: [32, 32], iconAnchor: [16, 16]
         });
 
         var layer_PET = L.geoJson(json_PET_5, {
@@ -98,7 +113,7 @@
             onEachFeature: function(f, l) {
                 l.on('click', function(e) {
                     L.DomEvent.stopPropagation(e);
-                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr><div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${f.properties.descriptio || 'ZONA SEGURA'}</span></div></div>`;
+                    document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO (PET)</strong><hr><div class="data-row"><span class="data-label">DETALLES:</span> <span class="data-value">${f.properties.descriptio || 'ZONA SEGURA'}</span></div></div>`;
                 });
             }
         }).addTo(map);
@@ -113,6 +128,7 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
+        // --- FUNCIONES DE APOYO ---
         function getProp(props, keys, isNumeroRec = false) {
             for (let k of keys) {
                 let val = props[k];
@@ -127,42 +143,39 @@
             return "SIN INFORMACIÓN";
         }
 
-        // MOTOR DE ESCANEO CON PRIORIDAD ESTRICTA
+        // --- MOTOR DE ESCANEO CON PRIORIDAD Y DEFINICIÓN DE ALI 1 ---
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
             var zonasDetectadas = [];
             var idsPredio = new Set();
 
-            // 1. Recolectar todas las zonas en el punto
             layer_riesgo.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     zonasDetectadas.push(l.feature.properties.descriptio.toUpperCase());
                 }
             });
 
-            // 2. Lógica de PRIORIDAD: Si hay zonas específicas, ignoramos ALI 1
             var zonaPrioritaria = "";
-            
-            // Buscamos primero si hay zonas específicas (distintas a ALI 1)
             var especificas = zonasDetectadas.filter(z => !z.includes("ALI 1"));
             
             if (especificas.length > 0) {
-                // Si hay específicas, tomamos la primera (jerarquía mayor)
                 zonaPrioritaria = especificas[0];
-            } else if (zonasDetectadas.includes("ALI 1") || zonasDetectadas.some(z => z.includes("ALI 1"))) {
-                // Si solo hay ALI 1, esa es la prioritaria
+            } else if (zonasDetectadas.some(z => z.includes("ALI 1"))) {
                 zonaPrioritaria = "ALI 1";
             }
 
-            // 3. Generar HTML de la zona prioritaria (SOLO UNA)
             if (zonaPrioritaria !== "") {
                 var descFinal = zonaPrioritaria;
-                if (zonaPrioritaria.includes("ALI 2")) descFinal = "ALI 2: ZONA CON ALTO PELIGRO DE SER AFECTADAS POR LAVAS Y/O LAHARES, DURANTE ERUPCIONES ORIGINADAS EN EL CONO Y/O CRÁTER PRINCIPAL O EN CRÁTERES ADVENTICIOS, TALES COMO LAS OCURRIDAS EN LA PREHISTORIA RECIENTE (< 3700 AÑOS AP) Y DURANTE LOS SIGLOS XVI, XVII, XVIII";
+                // --- DEFINICIONES TÉCNICAS ---
+                if (zonaPrioritaria.includes("ALI 1")) {
+                    descFinal = "ALI 1: ÁREA CON MUY ALTO PELIGRO DE SER AFECTADA POR FLUJOS DE LAVA Y/O LAHARES. CORRESPONDE A CAUCES Y ZONAS DE DEPÓSITO DE EVENTOS RECIENTES (SIGLOS XIX Y XX).";
+                } else if (zonaPrioritaria.includes("ALI 2")) {
+                    descFinal = "ALI 2: ZONA CON ALTO PELIGRO DE SER AFECTADAS POR LAVAS Y/O LAHARES, DURANTE ERUPCIONES ORIGINADAS EN EL CONO Y/O CRÁTER PRINCIPAL O EN CRÁTERES ADVENTICIOS, TALES COMO LAS OCURRIDAS EN LA PREHISTORIA RECIENTE Y DURANTE LOS SIGLOS XVI, XVII, XVIII.";
+                }
                 html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${descFinal}</div>`;
             }
 
-            // 4. Escanear Predios
             layer_predios.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
@@ -183,7 +196,21 @@
 
         map.on('click', function(e) { triggerScan(e.latlng); });
 
-        L.control.layers({ "🛰️ Satélite": gSat }, { "Riesgos": layer_riesgo, "Viviendas": clusterV, "PET": layer_PET }, { collapsed: false }).addTo(map);
+        // --- LEYENDA TOTAL ---
+        var baseMaps = {
+            "🛰️ Satélite Google": gSat,
+            "🌐 Mapa Híbrido": gHybrid,
+            "🗺️ Mapa Simple (OSM)": osm
+        };
+
+        var overlayMaps = {
+            "🌋 Peligros Volcánicos": layer_riesgo, 
+            "📏 Predios Rurales": layer_predios, 
+            "🏠 Capa Viviendas": clusterV, 
+            "🟢 Puntos Encuentro (PET)": layer_PET 
+        };
+
+        L.control.layers(baseMaps, overlayMaps, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
