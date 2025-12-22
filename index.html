@@ -15,6 +15,8 @@
             #map { flex-grow: 1; height: 100%; background: #e0e0e0; }
             
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
+            
+            /* TÍTULO ACTUALIZADO */
             .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 15px; margin-bottom: 20px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 18px; text-align: center; }
             
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
@@ -26,7 +28,7 @@
             .data-label { text-transform: uppercase; font-weight: 600; color: #777; font-size: 10px; }
             .data-value { color: #000; font-weight: bold; text-align: right; }
 
-            /* --- ESTÉTICA STARK SIN BORDES --- */
+            /* --- CLÚSTERES STARK SIN BORDES --- */
             .marker-cluster { background-color: transparent !important; }
             .marker-cluster div {
                 width: 40px; height: 40px; line-height: 40px; text-align: center; border-radius: 50%;
@@ -55,7 +57,7 @@
         <div id="main-container">
             <div id="map"></div>
             <div id="side-panel">
-                <div class="panel-header">ANÁLISIS DE RIESGO</div>
+                <div class="panel-header">GESTIÓN RIESGO VOLCÁNICO</div>
                 <div id="content-display">
                     <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para iniciar escaneo.</p>
                 </div>
@@ -127,21 +129,18 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, dashArray: "4", fillOpacity: 0 } }).addTo(map);
 
-        // --- LÓGICA DE ESCANEO CON FILTRO DE SOLAPAMIENTO ALI 1 ---
         map.on('click', function(e) {
             var pt = [e.latlng.lng, e.latlng.lat];
             var html = "";
             var rolesVistos = new Set();
             var zonasDetectadas = [];
 
-            // 1. Recopilar todas las zonas bajo el clic
             layer_riesgo.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     zonasDetectadas.push(l.feature.properties.descriptio.toUpperCase());
                 }
             });
 
-            // 2. FILTRAR SOLAPAMIENTO: Si hay más de una zona y una es ALI 1, eliminamos ALI 1
             if (zonasDetectadas.length > 1) {
                 var tieneALI1 = zonasDetectadas.some(z => z.includes("ALI 1"));
                 if (tieneALI1) {
@@ -149,12 +148,10 @@
                 }
             }
 
-            // 3. Generar HTML para zonas de riesgo filtradas
             zonasDetectadas.forEach(z => {
                 html += `<div class="info-card riesgo-box"><strong>⚠️ RIESGO:</strong> ${z}</div>`;
             });
 
-            // 4. Procesar Predios
             layer_predios.eachLayer(function(l) {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
