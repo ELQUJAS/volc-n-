@@ -16,23 +16,32 @@
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 16px; text-align: center; }
             
-            /* CLUSTERS ROJOS DINÁMICOS */
+            /* CLUSTERS ROJOS */
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 2px solid #fff; }
             .cluster-inner-text { color: white; font-family: 'Arial Black', sans-serif; font-size: 13px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
             .c-low { background: radial-gradient(circle, #ffb74d, #fb8c00); }
             .c-med { background: radial-gradient(circle, #ff7043, #f4511e); }
             .c-high { background: radial-gradient(circle, #ef5350, #b71c1c); box-shadow: 0 0 15px #ff0000; }
 
-            /* FICHAS INFORMATIVAS */
+            /* FICHAS */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
+            .pet-box { border-left-color: #00ffcc; background: #f0fffb; }
             
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
-            .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; margin-bottom: 2px; }
-            .data-value { color: #000; font-weight: bold; font-size: 11px; line-height: 1.3; }
+            .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
+            .data-value { color: #000; font-weight: bold; font-size: 11px; }
 
-            .leaflet-control-layers-expanded { border: 2px solid #00ffcc !important; border-radius: 8px; font-weight: bold; }
+            /* ICONO PET ANIMADO */
+            .pet-glow-icon { 
+                width: 30px; height: 30px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; 
+                display: flex; align-items: center; justify-content: center; 
+                box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; 
+            }
+            @keyframes pet-pulse { 0% { transform: scale(1); opacity: 1; } 50% { transform: scale(1.2); opacity: 0.7; } 100% { transform: scale(1); opacity: 1; } }
+            
+            .leaflet-control-layers-expanded { border: 2px solid #00ffcc !important; border-radius: 10px; font-weight: bold; }
         </style>
     </head>
     <body>
@@ -41,7 +50,7 @@
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para obtener información.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear.</p>
                 </div>
             </div>
         </div>
@@ -56,14 +65,15 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // MAPAS BASE
-        var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
+        // --- MAPAS BASE (INCLUYE RELIEVE) ---
+        var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Hybrid' });
+        var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22, attribution: 'Google Terrain' });
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-        // CAPA RIESGO CON COLORES TÉCNICOS
+        // --- CAPA RIESGO (COLORES) ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
@@ -79,14 +89,21 @@
             }
         }).addTo(map);
 
-        // CAPA VIVIENDAS E ICONOS
+        // --- CAPA PET (PERSONAS) ---
+        var petIcon = L.divIcon({
+            className: 'c-pet-icon',
+            html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="16" height="16" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
+            iconSize: [30, 30], iconAnchor: [15, 15]
+        });
+        var layer_PET = L.geoJson(json_PET_5, { pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }) }).addTo(map);
+
+        // --- VIVIENDAS Y CLUSTERS ---
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => L.marker(latlng, { 
                 icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22" style="filter: drop-shadow(2px 2px 1px rgba(0,0,0,0.9));"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="none" stroke="white" stroke-width="2"/></svg>', className: '', iconSize: [22, 22] }) 
             })
         });
 
-        // CLUSTERS ROJOS
         var clusterV = L.markerClusterGroup({ 
             maxClusterRadius: 70,
             iconCreateFunction: function(cluster) {
@@ -98,11 +115,11 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // FUNCIONES DE UTILIDAD
-        function getProp(props, keys) {
-            for (let key of keys) {
-                let found = Object.keys(props).find(k => k.toLowerCase().replace(/\s/g, '') === key.toLowerCase().replace(/\s/g, ''));
-                if (found && props[found] !== null && String(props[found]).trim() !== "" && String(props[found]).toLowerCase() !== "null") return props[found];
+        // --- MOTOR DE DATOS ---
+        function getProp(p, keys) {
+            for (let k of keys) {
+                let found = Object.keys(p).find(x => x.toLowerCase().replace(/\s/g,'') === k.toLowerCase().replace(/\s/g,''));
+                if (found && p[found] && String(p[found]).trim().toLowerCase() !== "null") return p[found];
             }
             return "SIN INFORMACIÓN";
         }
@@ -110,52 +127,48 @@
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
-            var zonasEncontradas = [];
+            var zonas = [];
             var rolesProcesados = new Set();
 
-            // 1. Detectar Peligro
-            layer_riesgo.eachLayer(l => {
-                if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    zonasEncontradas.push(l.feature.properties.descriptio.toUpperCase());
+            // 1. Riesgo
+            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase()); });
+            var zonaFinal = zonas.filter(z => !z.includes("ALI 1"))[0] || (zonas.find(z => z.includes("ALI 1")) ? "ALI 1 (MUY ALTO PELIGRO)" : "");
+            if (zonaFinal) html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO:</strong><br>${zonaFinal}</div>`;
+
+            // 2. PET
+            layer_PET.eachLayer(l => {
+                var dist = map.distance(latlng, l.getLatLng());
+                if (dist < 30) {
+                    html += `<div class="info-card pet-box"><strong>🟢 PERSONA ELECTRO-DEPENDIENTE</strong><br>Punto crítico de atención prioritaria.</div>`;
                 }
             });
 
-            var zonaFinal = zonasEncontradas.filter(z => !z.includes("ALI 1"))[0] || (zonasEncontradas.find(z => z.includes("ALI 1")) ? "ALI 1 (ÁREA DE MUY ALTO PELIGRO)" : "");
-            
-            if (zonaFinal) {
-                html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${zonaFinal}</div>`;
-            }
-
-            // 2. Detectar Predios
+            // 3. Predios
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
-                    var rol = getProp(p, ['ROL', 'Rol', 'ID_ROL']);
-                    var recepcion = getProp(p, ['NUMERO_REC', 'NUMERO REC', 'NUM_REC', 'RECEPCION']);
-                    var aprobacion = getProp(p, ['APROBACION', 'FECHA_APROB', 'FECHA APROBACION']);
-
+                    var rol = getProp(p, ['ROL', 'Rol']);
                     if (rol !== "SIN INFORMACIÓN" && !rolesProcesados.has(rol)) {
                         var casas = 0;
                         layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
-
+                        
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                             <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${rol}</span></div>
-                            <div class="data-row"><span class="data-label">APROBACIÓN PERMISO:</span><span class="data-value">${aprobacion}</span></div>
-                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${recepcion}</span></div>
-                            <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div></div>`;
+                            <div class="data-row"><span class="data-label">APROBACIÓN PERMISO:</span><span class="data-value">${getProp(p, ['APROBACION','FECHA_APROB'])}</span></div>
+                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${getProp(p, ['NUMERO_REC','NUM_REC'])}</span></div>
+                            <div class="data-row"><span class="data-label">VIVIENDAS:</span><span class="data-value">${casas}</span></div></div>`;
                         rolesProcesados.add(rol);
                     }
                 }
             });
-
-            document.getElementById('content-display').innerHTML = html || "Sin datos en esta ubicación.";
+            document.getElementById('content-display').innerHTML = html || "Sin datos.";
         }
 
         map.on('click', e => triggerScan(e.latlng));
 
-        // CONTROL DE CAPAS
-        var baseMaps = { "🌐 Google Híbrido": gHybrid, "🗺️ OpenStreetMap": osm };
-        var overlays = { "🌋 Capa Riesgo": layer_riesgo, "📏 Capa Predios": layer_predios, "🏠 Viviendas": clusterV };
+        // --- LEYENDA Y CAPAS ---
+        var baseMaps = { "🌐 Google Híbrido": gHybrid, "⛰️ Google Relieve": gTerrain, "🗺️ OSM": osm };
+        var overlays = { "🌋 Riesgo": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET };
         L.control.layers(baseMaps, overlays, { collapsed: false }).addTo(map);
 
         </script>
