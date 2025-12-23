@@ -29,7 +29,7 @@
             .data-label { text-transform: uppercase; font-weight: 800; color: #666; font-size: 9px; margin-bottom: 2px; }
             .data-value { color: #000; font-weight: bold; font-size: 12px; }
 
-            /* CLUSTERS VOLCÁNICOS */
+            /* CLUSTERS STARK */
             .cluster-stark { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
             .cluster-inner { color: white; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 3px #000; }
             .c-low { background: radial-gradient(circle, #ff9100, #ff6d00); }
@@ -83,14 +83,12 @@
                 else if (/ALI\s?2/.test(d)) col = "#cd853f"; 
                 else if (/MLI/.test(d)) col = "#ffae00";     
                 else if (/BLI/.test(d)) col = "#ffff00";     
-                else if (/AI\s?1/.test(d)) col = "#ff8c69";  
-                else if (/AI\s?2/.test(d)) col = "#b0c4de";  
                 return { stroke: true, color: "#fff", weight: 1, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
         // --- CAPA PET ---
-        var petIcon = L.divIcon({ className: 'c-pet-wrapper', html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
+        var petIcon = L.divIcon({ className: 'c-pet-wrapper', html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
         
         var layer_PET = L.geoJson(json_PET_5, { 
             pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }),
@@ -104,19 +102,38 @@
             }); }
         }).addTo(map);
 
-        // --- CLUSTERS VIVIENDAS ---
-        var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
-            pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1"/></svg>', className: '', iconSize: [22, 22] }) })
-        });
-
+        // --- CLUSTERS VIVIENDAS CON AUTO-CORRECCIÓN DE POSICIÓN ---
         var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 100,
+            maxClusterRadius: 80,
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var cClass = count < 20 ? 'c-low' : count < 80 ? 'c-med' : 'c-high';
                 return L.divIcon({ html: `<div class="cluster-inner">${count}</div>`, className: `cluster-stark ${cClass}`, iconSize: [40, 40] });
             }
-        }).addLayer(layer_viviendas).addTo(map);
+        });
+
+        L.geoJson(json_construccionesrurales__6, {
+            pointToLayer: function(f, latlng) {
+                // DETECTOR DE COORDENADAS INVERTIDAS
+                let lat = latlng.lat;
+                let lng = latlng.lng;
+                
+                // Si la latitud es positiva o la longitud es mayor que -50, probablemente estén al revés
+                if (lat > 0 || lng > -60) {
+                    let temp = lat;
+                    lat = lng;
+                    lng = temp;
+                }
+
+                return L.marker([lat, lng], { 
+                    icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1.5"/></svg>', className: '', iconSize: [22, 22] }) 
+                });
+            },
+            onEachFeature: function(f, l) {
+                clusterV.addLayer(l);
+            }
+        }).addTo(map);
+        map.addLayer(clusterV);
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
@@ -159,7 +176,7 @@
             if (zonas.length > 0) {
                 let z = zonas.length > 1 ? zonas.filter(x => !x.properties.descriptio.toUpperCase().includes("ALI 1"))[0] || zonas[0] : zonas[0];
                 let countV = 0;
-                layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, z)) countV++; });
+                clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], z.feature)) countV++; });
                 html += `<div class="info-card riesgo-box"><strong>🌋 ZONA VOLCÁNICA: ${z.properties.descriptio.toUpperCase()}</strong></div>`;
                 html += `<div class="info-card stats-box"><strong>📊 ANÁLISIS DE EXPOSICIÓN</strong>
                     <div class="data-row"><span class="data-label">VIVIENDAS EN ESTA ZONA:</span><span class="data-value">${countV}</span></div>
@@ -175,7 +192,7 @@
                         rolesUnicos.add(rol);
                         let pet = findClosestPET(latlng);
                         let houses = 0;
-                        layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) houses++; });
+                        clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) houses++; });
                         let nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC']);
                         if (nRec.length === 4 && parseInt(nRec) >= 1900 && parseInt(nRec) <= 2100) nRec = "SIN INFORMACIÓN";
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL - ROL: ${rol}</strong><hr>
@@ -195,7 +212,7 @@
 
         // --- LEYENDA TOTAL ---
         var baseMaps = { "🌐 Híbrido Google": gHybrid, "⛰️ Relieve Topo": gRelieve, "🛰️ Satélite Puro": gSat, "🗺️ OpenStreetMap": osm };
-        var overlays = { "🌋 Zonas Volcánicas": layer_riesgo, "🏠 Viviendas Rurales": clusterV, "📏 Predios Rurales": layer_predios, "🟢 Puntos PET": layer_PET };
+        var overlays = { "🌋 Zonas Volcánicas": layer_riesgo, "🏠 Viviendas (Clusters)": clusterV, "📏 Predios Rurales": layer_predios, "🟢 Puntos PET": layer_PET };
         L.control.layers(baseMaps, overlays, { collapsed: false }).addTo(map);
 
         </script>
