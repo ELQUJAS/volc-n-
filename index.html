@@ -29,16 +29,16 @@
             .data-label { text-transform: uppercase; font-weight: 800; color: #666; font-size: 9px; margin-bottom: 2px; }
             .data-value { color: #000; font-weight: bold; font-size: 12px; }
 
-            /* CLUSTERS VOLCÁNICOS */
-            .cluster-stark { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
+            /* CLUSTERS STARK REFORZADOS */
+            .cluster-stark { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.5); width: 42px !important; height: 42px !important; }
             .cluster-inner { color: white; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 3px #000; }
             .c-low { background: radial-gradient(circle, #ff9100, #ff6d00); }
             .c-med { background: radial-gradient(circle, #ff3d00, #dd2c00); }
-            .c-high { background: radial-gradient(circle, #d50000, #800000); animation: pulse-stark 2s infinite; }
-            @keyframes pulse-stark { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+            .c-high { background: radial-gradient(circle, #d50000, #800000); animation: p-stark 2s infinite; }
+            @keyframes p-stark { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
-            .pet-glow-icon { width: 32px; height: 32px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
-            @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+            .pet-glow-icon { width: 32px; height: 32px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; cursor: pointer; }
+            @keyframes pet-pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
 
             .leaflet-control-layers-expanded { background: white !important; border: 2px solid #ff4400 !important; border-radius: 10px; font-weight: bold; padding: 10px; }
         </style>
@@ -65,139 +65,122 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- MAPAS BASE ---
+        // --- 1. MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gRelieve = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
-        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-        // --- ZONAS VOLCÁNICAS ---
+        // --- 2. ZONAS VOLCÁNICAS ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
                 var col = "#ffffff";
-                if (/ALI\s?1/.test(d)) col = "#ff0000";      
-                else if (/ALI\s?2/.test(d)) col = "#cd853f"; 
-                else if (/MLI/.test(d)) col = "#ffae00";     
-                else if (/BLI/.test(d)) col = "#ffff00";     
-                else if (/AI\s?1/.test(d)) col = "#ff8c69";  
-                else if (/AI\s?2/.test(d)) col = "#b0c4de";  
+                if (d.includes("ALI 1")) col = "#ff0000";      
+                else if (d.includes("ALI 2")) col = "#cd853f"; 
+                else if (d.includes("MLI")) col = "#ffae00";     
+                else if (d.includes("BLI")) col = "#ffff00";     
+                else if (d.includes("AI 1")) col = "#ff8c69";  
+                else if (d.includes("AI 2")) col = "#b0c4de";  
                 return { stroke: true, color: "#fff", weight: 1, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
-        // --- CAPA PET ---
-        var petIcon = L.divIcon({ className: 'c-pet-wrapper', html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
-        
+        // --- 3. CAPA PET ---
+        var petIcon = L.divIcon({ className: '', html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
         var layer_PET = L.geoJson(json_PET_5, { 
-            pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }),
+            pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon, interactive: true }),
             onEachFeature: (f, l) => { l.on('click', (e) => { 
                 L.DomEvent.stopPropagation(e); 
-                document.getElementById('content-display').innerHTML = `
-                    <div class="info-card pet-box">
-                        <strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr>
-                        <div class="data-row"><span class="data-label">DETALLES:</span><span class="data-value">${f.properties.descriptio || f.properties.Nombre || 'ZONA SEGURA'}</span></div>
-                    </div>`;
+                document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong>🛡️ PET: ${f.properties.Nombre || f.properties.descriptio}</strong></div>`;
             }); }
         }).addTo(map);
 
-        // --- CLUSTERS VIVIENDAS ---
-        var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
-            pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1"/></svg>', className: '', iconSize: [22, 22] }) })
-        });
-
+        // --- 4. CLUSTERS VIVIENDAS (RE-POSICIONADOS Y ESTABLES) ---
         var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 100,
+            maxClusterRadius: 100, // Aumentado para mejor agrupación al alejar
+            removeOutsideVisibleBounds: false, // EVITA QUE SE PIERDAN AL ALEJAR
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var cClass = count < 20 ? 'c-low' : count < 80 ? 'c-med' : 'c-high';
-                return L.divIcon({ html: `<div class="cluster-inner">${count}</div>`, className: `cluster-stark ${cClass}`, iconSize: [40, 40] });
+                return L.divIcon({ html: `<div class="cluster-inner">${count}</div>`, className: `cluster-stark ${cClass}`, iconSize: [42, 42] });
             }
-        }).addLayer(layer_viviendas).addTo(map);
+        });
 
-        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
+        L.geoJson(json_construccionesrurales__6, {
+            pointToLayer: function(f, latlng) {
+                var lat = latlng.lat; var lng = latlng.lng;
+                
+                // FILTRO DE CORRECCIÓN: Si el punto está fuera de Villarrica, corregir o descartar
+                // Límites aproximados: Lat [-40 a -38], Lng [-73 a -71]
+                if (lat > -38 || lat < -40 || lng > -71 || lng < -73) {
+                    // Intento de invertir si fue un error de exportación
+                    if (lng > -40 && lng < -38 && lat > -73 && lat < -71) {
+                        var temp = lat; lat = lng; lng = temp;
+                    } else {
+                        return null; // Si sigue fuera de rango, no posicionar para no arruinar el mapa
+                    }
+                }
+                
+                return L.marker([lat, lng], { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1.2"/></svg>', className: '', iconSize: [22, 22] }) });
+            },
+            onEachFeature: function(f, l) { if(l) clusterV.addLayer(l); }
+        });
+        map.addLayer(clusterV);
 
-        // --- LÓGICA DE DATOS ---
+        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1.2, fillOpacity: 0 } }).addTo(map);
+
+        // --- 5. FUNCIONES ---
         function getStableProp(p, keys) {
             for (let k of keys) {
                 let search = k.toUpperCase().replace(/[\s_]/g, '');
                 let foundKey = Object.keys(p).find(original => original.toUpperCase().replace(/[\s_]/g, '') === search);
-                if (foundKey && p[foundKey] !== null && String(p[foundKey]).trim() !== "" && String(p[foundKey]).toLowerCase() !== "null") return p[foundKey];
+                if (foundKey && p[foundKey] !== null) return p[foundKey];
             }
             return "SIN INFORMACIÓN";
-        }
-
-        function findClosestPET(latlng) {
-            let minDist = Infinity;
-            let closest = null;
-            layer_PET.eachLayer(l => {
-                let d = map.distance(latlng, l.getLatLng());
-                if (d < minDist) { minDist = d; closest = l.feature.properties; }
-            });
-            return { name: closest ? (closest.descriptio || closest.Nombre) : "No detectado", dist: (minDist / 1000).toFixed(2) };
-        }
-
-        function searchByRol() {
-            let val = document.getElementById('rolSearch').value.trim();
-            if (val.length < 3) return;
-            layer_predios.eachLayer(l => {
-                let rol = String(l.feature.properties.ROL || l.feature.properties.Rol);
-                if (rol === val) { map.fitBounds(l.getBounds()); triggerScan(l.getBounds().getCenter()); }
-            });
         }
 
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
-            var zonas = [];
+            var zonasClick = [];
             var rolesUnicos = new Set();
 
-            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature); });
-            if (zonas.length > 0) {
-                let z = zonas.length > 1 ? zonas.filter(x => !x.properties.descriptio.toUpperCase().includes("ALI 1"))[0] || zonas[0] : zonas[0];
+            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonasClick.push(l.feature); });
+            if (zonasClick.length > 0) {
+                var zFinal = (zonasClick.length > 1) ? zonasClick.filter(z => !z.properties.descriptio.toUpperCase().includes("ALI 1"))[0] || zonasClick[0] : zonasClick[0];
                 let countV = 0;
-                layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, z)) countV++; });
-                html += `<div class="info-card riesgo-box"><strong>🌋 ZONA VOLCÁNICA: ${z.properties.descriptio.toUpperCase()}</strong></div>`;
-                html += `<div class="info-card stats-box"><strong>📊 ANÁLISIS DE EXPOSICIÓN</strong>
-                    <div class="data-row"><span class="data-label">VIVIENDAS EN ESTA ZONA:</span><span class="data-value">${countV}</span></div>
-                    <div class="data-row"><span class="data-label">POBLACIÓN ESTIMADA:</span><span class="data-value">${Math.round(countV * 4.2)} pers. aprox.</span></div>
-                </div>`;
+                clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], zFinal.feature)) countV++; });
+                html += `<div class="info-card riesgo-box"><strong>🌋 ZONA: ${zFinal.properties.descriptio.toUpperCase()}</strong></div>`;
+                html += `<div class="info-card stats-box"><strong>📊 POBLACIÓN: ~${Math.round(countV * 4.2)} pers.</strong></div>`;
             }
 
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    let p = l.feature.properties;
-                    let rol = getStableProp(p, ['ROL']);
+                    let p = l.feature.properties; let rol = getStableProp(p, ['ROL']);
                     if (!rolesUnicos.has(rol)) {
                         rolesUnicos.add(rol);
-                        let pet = findClosestPET(latlng);
-                        let houses = 0;
-                        layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) houses++; });
                         let nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC']);
-                        if (nRec.length === 4 && parseInt(nRec) >= 1900 && parseInt(nRec) <= 2100) nRec = "SIN INFORMACIÓN";
-                        html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL - ROL: ${rol}</strong><hr>
+                        if (nRec.length === 4 && parseInt(nRec) > 1900) nRec = "SIN INFORMACIÓN";
+                        html += `<div class="info-card predio-box"><strong>📑 ROL: ${rol}</strong><hr>
                             <div class="data-row"><span class="data-label">SECTOR:</span><span class="data-value">${getStableProp(p, ['ZONAS', 'ZONA', 'SECTOR'])}</span></div>
-                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div>
-                            <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${houses}</span></div>
-                            <hr>
-                            <div class="data-row"><span class="data-label">PET MÁS CERCANO:</span><span class="data-value" style="color:#b71c1c;">${pet.name} (${pet.dist} KM)</span></div>
+                            <div class="data-row"><span class="data-label">RECEPCIÓN:</span><span class="data-value">${nRec}</span></div>
                         </div>`;
                     }
                 }
             });
-            document.getElementById('content-display').innerHTML = html || "Zona sin datos registrados.";
+            document.getElementById('content-display').innerHTML = html || "Zona sin datos.";
         }
 
         map.on('click', e => triggerScan(e.latlng));
+        function searchByRol() {
+            let val = document.getElementById('rolSearch').value.trim();
+            layer_predios.eachLayer(l => { if (String(l.feature.properties.ROL) === val) { map.fitBounds(l.getBounds()); triggerScan(l.getBounds().getCenter()); } });
+        }
 
-        // --- LEYENDA TOTAL ---
-        var baseMaps = { "🌐 Híbrido Google": gHybrid, "⛰️ Relieve Topo": gRelieve, "🛰️ Satélite Puro": gSat, "🗺️ OpenStreetMap": osm };
-        var overlays = { "🌋 Zonas Volcánicas": layer_riesgo, "🏠 Viviendas Rurales": clusterV, "📏 Predios Rurales": layer_predios, "🟢 Puntos PET": layer_PET };
-        L.control.layers(baseMaps, overlays, { collapsed: false }).addTo(map);
-
+        L.control.layers({ "🌐 Híbrido": gHybrid, "⛰️ Relieve": gRelieve, "🗺️ OSM": osm }, { "🌋 Zonas Volcánicas": layer_riesgo, "🏠 Viviendas": clusterV, "📏 Predios": layer_predios, "🟢 PET": layer_PET }, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
