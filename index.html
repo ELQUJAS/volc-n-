@@ -29,16 +29,10 @@
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
             
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
-            .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
-            .data-value { color: #000; font-weight: bold; font-size: 11px; }
+            .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; margin-bottom: 2px; }
+            .data-value { color: #000; font-weight: bold; font-size: 11px; line-height: 1.3; }
 
-            /* ICONO PET */
-            .pet-glow-icon { 
-                width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
-                display: flex; align-items: center; justify-content: center; 
-                box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.2s infinite; 
-            }
-            @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+            .leaflet-control-layers-expanded { border: 2px solid #00ffcc !important; border-radius: 8px; font-weight: bold; }
         </style>
     </head>
     <body>
@@ -47,13 +41,13 @@
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para obtener información.</p>
                 </div>
             </div>
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/markercluster.js"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
         <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script> 
 
         <script src="data/riesgo_volcan_zonas_3.js"></script>
@@ -62,8 +56,12 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
+        // MAPAS BASE
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
         // CAPA RIESGO CON COLORES TÉCNICOS
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
@@ -81,7 +79,7 @@
             }
         }).addTo(map);
 
-        // ICONO CASA (SIN FONDO)
+        // CAPA VIVIENDAS E ICONOS
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => L.marker(latlng, { 
                 icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22" style="filter: drop-shadow(2px 2px 1px rgba(0,0,0,0.9));"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="none" stroke="white" stroke-width="2"/></svg>', className: '', iconSize: [22, 22] }) 
@@ -90,6 +88,7 @@
 
         // CLUSTERS ROJOS
         var clusterV = L.markerClusterGroup({ 
+            maxClusterRadius: 70,
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var cClass = count < 10 ? 'c-low' : count < 50 ? 'c-med' : 'c-high';
@@ -99,11 +98,11 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // Búsqueda flexible de datos
+        // FUNCIONES DE UTILIDAD
         function getProp(props, keys) {
             for (let key of keys) {
                 let found = Object.keys(props).find(k => k.toLowerCase().replace(/\s/g, '') === key.toLowerCase().replace(/\s/g, ''));
-                if (found && props[found] !== null && String(props[found]).trim() !== "") return props[found];
+                if (found && props[found] !== null && String(props[found]).trim() !== "" && String(props[found]).toLowerCase() !== "null") return props[found];
             }
             return "SIN INFORMACIÓN";
         }
@@ -111,16 +110,23 @@
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
-            var zonas = [];
+            var zonasEncontradas = [];
             var rolesProcesados = new Set();
 
+            // 1. Detectar Peligro
             layer_riesgo.eachLayer(l => {
-                if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase());
+                if (turf.booleanPointInPolygon(pt, l.feature)) {
+                    zonasEncontradas.push(l.feature.properties.descriptio.toUpperCase());
+                }
             });
 
-            var zonaFinal = zonas.filter(z => !z.includes("ALI 1"))[0] || (zonas.find(z => z.includes("ALI 1")) ? "ALI 1 (ÁREA DE MUY ALTO PELIGRO)" : "");
-            if (zonaFinal) html += `<div class="info-card riesgo-box"><strong>PELIGRO VOLCÁNICO:</strong><br>${zonaFinal}</div>`;
+            var zonaFinal = zonasEncontradas.filter(z => !z.includes("ALI 1"))[0] || (zonasEncontradas.find(z => z.includes("ALI 1")) ? "ALI 1 (ÁREA DE MUY ALTO PELIGRO)" : "");
+            
+            if (zonaFinal) {
+                html += `<div class="info-card riesgo-box"><strong>🌋 PELIGRO VOLCÁNICO:</strong><br>${zonaFinal}</div>`;
+            }
 
+            // 2. Detectar Predios
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
@@ -132,7 +138,6 @@
                         var casas = 0;
                         layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
 
-                        // NUEVO ORDEN: ROL -> APROBACION -> NUMERO RECEPCION -> VIVIENDAS
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                             <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${rol}</span></div>
                             <div class="data-row"><span class="data-label">APROBACIÓN PERMISO:</span><span class="data-value">${aprobacion}</span></div>
@@ -142,10 +147,17 @@
                     }
                 }
             });
-            document.getElementById('content-display').innerHTML = html || "Sin datos.";
+
+            document.getElementById('content-display').innerHTML = html || "Sin datos en esta ubicación.";
         }
 
         map.on('click', e => triggerScan(e.latlng));
+
+        // CONTROL DE CAPAS
+        var baseMaps = { "🌐 Google Híbrido": gHybrid, "🗺️ OpenStreetMap": osm };
+        var overlays = { "🌋 Capa Riesgo": layer_riesgo, "📏 Capa Predios": layer_predios, "🏠 Viviendas": clusterV };
+        L.control.layers(baseMaps, overlays, { collapsed: false }).addTo(map);
+
         </script>
     </body>
 </html>
