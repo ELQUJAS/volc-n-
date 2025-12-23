@@ -23,7 +23,6 @@
             .c-med { background: radial-gradient(circle, #ff7043, #f4511e); }
             .c-high { background: radial-gradient(circle, #ef5350, #b71c1c); box-shadow: 0 0 15px #ff0000; }
 
-            /* Fichas */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
@@ -31,13 +30,6 @@
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
-
-            .pet-glow-icon { 
-                width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
-                display: flex; align-items: center; justify-content: center; 
-                box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.2s infinite; 
-            }
-            @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         </style>
     </head>
     <body>
@@ -64,11 +56,19 @@
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
 
-        // CAPA RIESGO
+        // --- RESTAURACIÓN DE COLORES DE RIESGO ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
-                var d = String(f.properties['descriptio'] || "").toUpperCase();
-                var col = /ALI\s?1/.test(d) ? "#ff0000" : /ALI\s?2/.test(d) ? "#cd853f" : "#ffae00";
+                var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
+                var col = "#ffffff";
+                // Colores técnicos por zona
+                if (/ALI\s?1/.test(d)) col = "#ff0000";      // Rojo
+                else if (/ALI\s?2/.test(d)) col = "#cd853f"; // Café claro (Perú)
+                else if (/MLI/.test(d)) col = "#ffae00";     // Naranja
+                else if (/MI/.test(d)) col = "#b8860b";      // Oro oscuro
+                else if (/BLI/.test(d)) col = "#ffff00";     // Amarillo
+                else if (/AI\s?1/.test(d)) col = "#ff8c69";  // Salmón
+                else if (/AI\s?2/.test(d)) col = "#b0c4de";  // Azul acero
                 return { stroke: true, color: "#fff", weight: 0.8, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
@@ -90,15 +90,11 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- NUEVA FUNCIÓN DE BÚSQUEDA FLEXIBLE DE COLUMNAS ---
+        // Búsqueda flexible de datos
         function getProp(props, keys) {
-            // Busca en el objeto de propiedades cualquier coincidencia con la lista de llaves
             for (let key of keys) {
-                // Busca coincidencia exacta, ignorando mayúsculas y espacios
                 let found = Object.keys(props).find(k => k.toLowerCase().replace(/\s/g, '') === key.toLowerCase().replace(/\s/g, ''));
-                if (found && props[found] !== null && String(props[found]).trim() !== "") {
-                    return props[found];
-                }
+                if (found && props[found] !== null && String(props[found]).trim() !== "") return props[found];
             }
             return "SIN INFORMACIÓN";
         }
@@ -113,19 +109,18 @@
                 if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase());
             });
 
-            var zonaFinal = zonas.filter(z => !z.includes("ALI 1"))[0] || (zonas.includes("ALI 1") ? "ALI 1" : "");
-            if (zonaFinal) html += `<div class="info-card riesgo-box"><strong>Peligo:</strong> ${zonaFinal}</div>`;
+            // Lógica de priorización: Ignorar ALI 1 si hay otra zona más específica
+            var zonaFinal = zonas.filter(z => !z.includes("ALI 1"))[0] || (zonas.find(z => z.includes("ALI 1")) ? "ALI 1 (ÁREA DE MUY ALTO PELIGRO)" : "");
+            if (zonaFinal) html += `<div class="info-card riesgo-box"><strong>PELIGRO VOLCÁNICO:</strong><br>${zonaFinal}</div>`;
 
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
-                    
-                    // Mapeo flexible por si acaso el nombre varía en el archivo
                     var rol = getProp(p, ['ROL', 'Rol', 'ID_ROL']);
                     var recepcion = getProp(p, ['NUMERO_REC', 'NUMERO REC', 'NUM_REC', 'RECEPCION']);
-                    var aprobacion = getProp(p, ['APROBACION', 'FECHA_APROB', 'APROB']);
+                    var aprobacion = getProp(p, ['APROBACION', 'FECHA_APROB']);
 
-                    if (!rolesProcesados.has(rol)) {
+                    if (rol !== "SIN INFORMACIÓN" && !rolesProcesados.has(rol)) {
                         var casas = 0;
                         layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
 
