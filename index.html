@@ -18,7 +18,7 @@
             .panel-header { border-bottom: 4px solid #ff4400; padding-bottom: 10px; margin-bottom: 15px; color: #b71c1c; text-transform: uppercase; font-weight: 900; font-size: 18px; text-align: center; }
             .search-box { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #333; border-radius: 4px; box-sizing: border-box; font-weight: bold; background: #f9f9f9; }
 
-            /* FICHAS */
+            /* FICHAS DE INFORMACIÓN */
             .info-card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 8px solid #444; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
             .riesgo-box { border-left-color: #ff0000; background: #fff5f5; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
@@ -29,13 +29,24 @@
             .data-label { text-transform: uppercase; font-weight: 800; color: #666; font-size: 9px; margin-bottom: 2px; }
             .data-value { color: #000; font-weight: bold; font-size: 12px; }
 
-            /* CLUSTERS STARK */
-            .cluster-stark { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white; box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-            .cluster-inner { color: white; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 3px #000; }
-            .c-low { background: radial-gradient(circle, #ff9100, #ff6d00); }
-            .c-med { background: radial-gradient(circle, #ff3d00, #dd2c00); }
-            .c-high { background: radial-gradient(circle, #d50000, #800000); animation: pulse-stark 2s infinite; }
-            @keyframes pulse-stark { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+            /* RECONSTRUCCIÓN DE CLUSTERS (EVITA COLAPSO) */
+            .cluster-stark { 
+                border-radius: 50%; 
+                display: flex !important; 
+                align-items: center; 
+                justify-content: center; 
+                border: 2px solid white; 
+                box-shadow: 0 0 12px rgba(0,0,0,0.4);
+                width: 40px !important; /* Dimensión fija para evitar colapso visual */
+                height: 40px !important;
+            }
+            .cluster-inner { color: white; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 2px #000; }
+            
+            .c-low { background: radial-gradient(circle, #4caf50, #2e7d32); }
+            .c-med { background: radial-gradient(circle, #ff9100, #ff6d00); }
+            .c-high { background: radial-gradient(circle, #ff1744, #b71c1c); animation: cluster-pulse 2s infinite; }
+
+            @keyframes cluster-pulse { 0% { box-shadow: 0 0 5px #f00; } 50% { box-shadow: 0 0 20px #f00; } 100% { box-shadow: 0 0 5px #f00; } }
 
             .pet-glow-icon { width: 32px; height: 32px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
@@ -50,7 +61,7 @@
                 <div class="panel-header">GESTIÓN DE RIESGO VOLCÁNICO</div>
                 <input type="text" id="rolSearch" class="search-box" placeholder="🔍 BUSCAR ROL (Ej: 123-4)..." onkeyup="searchByRol()">
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear zona.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para analizar.</p>
                 </div>
             </div>
         </div>
@@ -65,16 +76,15 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- MAPAS BASE ---
+        // --- 1. MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gRelieve = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
-        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-        // --- ZONAS VOLCÁNICAS ---
+        // --- 2. ZONAS VOLCÁNICAS (ESTABILIZADO) ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
@@ -87,132 +97,107 @@
             }
         }).addTo(map);
 
-        // --- CAPA PET ---
+        // --- 3. CAPA PET ---
         var petIcon = L.divIcon({ className: 'c-pet-wrapper', html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
         
         var layer_PET = L.geoJson(json_PET_5, { 
             pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }),
             onEachFeature: (f, l) => { l.on('click', (e) => { 
                 L.DomEvent.stopPropagation(e); 
-                document.getElementById('content-display').innerHTML = `
-                    <div class="info-card pet-box">
-                        <strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr>
-                        <div class="data-row"><span class="data-label">DETALLES:</span><span class="data-value">${f.properties.descriptio || f.properties.Nombre || 'ZONA SEGURA'}</span></div>
-                    </div>`;
+                document.getElementById('content-display').innerHTML = `<div class="info-card pet-box"><strong>🛡️ PET: ${f.properties.Nombre || f.properties.descriptio}</strong></div>`;
             }); }
         }).addTo(map);
 
-        // --- CLUSTERS VIVIENDAS CON AUTO-CORRECCIÓN DE POSICIÓN ---
-        var clusterV = L.markerClusterGroup({ 
+        // --- 4. RECONSTRUCCIÓN MAESTRA DE CLUSTERS ---
+        var clusterV = L.markerClusterGroup({
             maxClusterRadius: 80,
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var cClass = count < 20 ? 'c-low' : count < 80 ? 'c-med' : 'c-high';
-                return L.divIcon({ html: `<div class="cluster-inner">${count}</div>`, className: `cluster-stark ${cClass}`, iconSize: [40, 40] });
+                return L.divIcon({ 
+                    html: `<div class="cluster-inner">${count}</div>`, 
+                    className: `cluster-stark ${cClass}`, 
+                    iconSize: [40, 40] 
+                });
             }
         });
 
+        // Carga de viviendas con corrección de coordenadas
         L.geoJson(json_construccionesrurales__6, {
             pointToLayer: function(f, latlng) {
-                // DETECTOR DE COORDENADAS INVERTIDAS
-                let lat = latlng.lat;
-                let lng = latlng.lng;
-                
-                // Si la latitud es positiva o la longitud es mayor que -50, probablemente estén al revés
-                if (lat > 0 || lng > -60) {
-                    let temp = lat;
-                    lat = lng;
-                    lng = temp;
+                // Validación de coordenadas para evitar que salgan del mapa
+                var lat = latlng.lat;
+                var lng = latlng.lng;
+                if (lat > 0 || lng > -60) { // Si están invertidas, corregir
+                    var temp = lat; lat = lng; lng = temp;
                 }
-
                 return L.marker([lat, lng], { 
-                    icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1.5"/></svg>', className: '', iconSize: [22, 22] }) 
+                    icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1"/></svg>', className: '', iconSize: [22, 22] }) 
                 });
             },
             onEachFeature: function(f, l) {
-                clusterV.addLayer(l);
+                clusterV.addLayer(l); // Añadir al grupo de clúster, NO al mapa directamente
             }
-        }).addTo(map);
-        map.addLayer(clusterV);
+        });
+        map.addLayer(clusterV); // Añadir el grupo completo al mapa
 
-        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
+        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1.2, fillOpacity: 0 } }).addTo(map);
 
-        // --- LÓGICA DE DATOS ---
+        // --- 5. FUNCIONES DE VINCULACIÓN ---
         function getStableProp(p, keys) {
             for (let k of keys) {
                 let search = k.toUpperCase().replace(/[\s_]/g, '');
                 let foundKey = Object.keys(p).find(original => original.toUpperCase().replace(/[\s_]/g, '') === search);
-                if (foundKey && p[foundKey] !== null && String(p[foundKey]).trim() !== "" && String(p[foundKey]).toLowerCase() !== "null") return p[foundKey];
+                if (foundKey && p[foundKey] !== null) return p[foundKey];
             }
             return "SIN INFORMACIÓN";
-        }
-
-        function findClosestPET(latlng) {
-            let minDist = Infinity;
-            let closest = null;
-            layer_PET.eachLayer(l => {
-                let d = map.distance(latlng, l.getLatLng());
-                if (d < minDist) { minDist = d; closest = l.feature.properties; }
-            });
-            return { name: closest ? (closest.descriptio || closest.Nombre) : "No detectado", dist: (minDist / 1000).toFixed(2) };
-        }
-
-        function searchByRol() {
-            let val = document.getElementById('rolSearch').value.trim();
-            if (val.length < 3) return;
-            layer_predios.eachLayer(l => {
-                let rol = String(l.feature.properties.ROL || l.feature.properties.Rol);
-                if (rol === val) { map.fitBounds(l.getBounds()); triggerScan(l.getBounds().getCenter()); }
-            });
         }
 
         function triggerScan(latlng) {
             var pt = [latlng.lng, latlng.lat];
             var html = "";
-            var zonas = [];
             var rolesUnicos = new Set();
 
-            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature); });
-            if (zonas.length > 0) {
-                let z = zonas.length > 1 ? zonas.filter(x => !x.properties.descriptio.toUpperCase().includes("ALI 1"))[0] || zonas[0] : zonas[0];
-                let countV = 0;
-                clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], z.feature)) countV++; });
-                html += `<div class="info-card riesgo-box"><strong>🌋 ZONA VOLCÁNICA: ${z.properties.descriptio.toUpperCase()}</strong></div>`;
-                html += `<div class="info-card stats-box"><strong>📊 ANÁLISIS DE EXPOSICIÓN</strong>
-                    <div class="data-row"><span class="data-label">VIVIENDAS EN ESTA ZONA:</span><span class="data-value">${countV}</span></div>
-                    <div class="data-row"><span class="data-label">POBLACIÓN ESTIMADA:</span><span class="data-value">${Math.round(countV * 4.2)} pers. aprox.</span></div>
-                </div>`;
-            }
+            // Análisis de Zona
+            layer_riesgo.eachLayer(l => {
+                if (turf.booleanPointInPolygon(pt, l.feature)) {
+                    let countV = 0;
+                    clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) countV++; });
+                    html += `<div class="info-card riesgo-box"><strong>🌋 ZONA: ${l.feature.properties.descriptio.toUpperCase()}</strong></div>`;
+                    html += `<div class="info-card stats-box"><strong>📊 POBLACIÓN: ~${Math.round(countV * 4.2)} pers.</strong></div>`;
+                }
+            });
 
+            // Ficha Predial
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     let p = l.feature.properties;
                     let rol = getStableProp(p, ['ROL']);
                     if (!rolesUnicos.has(rol)) {
                         rolesUnicos.add(rol);
-                        let pet = findClosestPET(latlng);
                         let houses = 0;
                         clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) houses++; });
-                        let nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC']);
-                        if (nRec.length === 4 && parseInt(nRec) >= 1900 && parseInt(nRec) <= 2100) nRec = "SIN INFORMACIÓN";
-                        html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL - ROL: ${rol}</strong><hr>
-                            <div class="data-row"><span class="data-label">SECTOR:</span><span class="data-value">${getStableProp(p, ['ZONAS', 'ZONA', 'SECTOR'])}</span></div>
-                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div>
-                            <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${houses}</span></div>
-                            <hr>
-                            <div class="data-row"><span class="data-label">PET MÁS CERCANO:</span><span class="data-value" style="color:#b71c1c;">${pet.name} (${pet.dist} KM)</span></div>
-                        </div>`;
+                        html += `<div class="info-card predio-box"><strong>📑 ROL: ${rol}</strong><hr>
+                            <div class="data-row"><span class="data-label">RECEPCIÓN:</span><span class="data-value">${getStableProp(p, ['NUMERO_REC'])}</span></div>
+                            <div class="data-row"><span class="data-label">VIVIENDAS:</span><span class="data-value">${houses}</span></div></div>`;
                     }
                 }
             });
-            document.getElementById('content-display').innerHTML = html || "Zona sin datos registrados.";
+            document.getElementById('content-display').innerHTML = html || "Zona sin datos.";
         }
 
         map.on('click', e => triggerScan(e.latlng));
 
-        // --- LEYENDA TOTAL ---
-        var baseMaps = { "🌐 Híbrido Google": gHybrid, "⛰️ Relieve Topo": gRelieve, "🛰️ Satélite Puro": gSat, "🗺️ OpenStreetMap": osm };
-        var overlays = { "🌋 Zonas Volcánicas": layer_riesgo, "🏠 Viviendas (Clusters)": clusterV, "📏 Predios Rurales": layer_predios, "🟢 Puntos PET": layer_PET };
+        function searchByRol() {
+            let val = document.getElementById('rolSearch').value.trim();
+            layer_predios.eachLayer(l => {
+                if (String(l.feature.properties.ROL) === val) { map.fitBounds(l.getBounds()); triggerScan(l.getBounds().getCenter()); }
+            });
+        }
+
+        // --- 6. LEYENDA TOTAL ---
+        var baseMaps = { "🌐 Híbrido": gHybrid, "⛰️ Relieve": gRelieve, "🗺️ OSM": osm };
+        var overlays = { "🌋 Zonas Volcánicas": layer_riesgo, "🏠 Viviendas": clusterV, "📏 Predios": layer_predios, "🟢 PET": layer_PET };
         L.control.layers(baseMaps, overlays, { collapsed: false }).addTo(map);
 
         </script>
