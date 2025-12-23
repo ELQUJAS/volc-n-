@@ -10,7 +10,6 @@
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
         
         <style>
-            /* --- ESTABILIZACIÓN DE INTERFAZ --- */
             html, body { height: 100%; margin: 0; background: #0a0a0a; font-family: 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
             #main-container { display: flex; height: 100%; width: 100%; }
             #map { flex-grow: 1; height: 100%; background: #1a1a1a; }
@@ -19,7 +18,7 @@
             .panel-header { border-bottom: 4px solid #ff4400; padding-bottom: 10px; margin-bottom: 15px; color: #b71c1c; text-transform: uppercase; font-weight: 900; font-size: 18px; text-align: center; letter-spacing: 1px; }
             .search-box { width: 100%; padding: 12px; margin-bottom: 15px; border: 2px solid #333; border-radius: 4px; box-sizing: border-box; font-weight: bold; background: #f9f9f9; }
 
-            /* --- FICHAS TÉCNICAS --- */
+            /* FICHAS */
             .info-card { background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 15px; margin-bottom: 15px; border-left: 8px solid #444; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
             .riesgo-box { border-left-color: #ff0000; background: #fff5f5; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
@@ -28,24 +27,22 @@
             
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #eee; padding-bottom: 5px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #666; font-size: 9px; margin-bottom: 2px; }
-            .data-value { color: #000; font-weight: bold; font-size: 12px; line-height: 1.2; }
+            .data-value { color: #000; font-weight: bold; font-size: 12px; }
 
-            /* --- ESTÉTICA STARK CLUSTERS (VOLCÁNICOS) --- */
-            .cluster-stark { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.8); box-shadow: 0 0 15px rgba(0,0,0,0.5); }
-            .cluster-inner { color: white; font-weight: 900; font-size: 14px; text-shadow: 1px 1px 3px #000; }
+            /* ESTÉTICA VOLCÁNICA DE CLUSTERS (CORREGIDA PARA ZOOM) */
+            .cluster-stark { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid rgba(255,255,255,0.9); box-shadow: 0 0 20px rgba(0,0,0,0.8); transition: all 0.3s ease; }
+            .cluster-inner { color: white; font-weight: 900; font-size: 15px; text-shadow: 2px 2px 4px #000; }
             
-            /* Paleta de Incandescencia */
-            .c-low { background: radial-gradient(circle, #ff9100, #ff6d00); box-shadow: 0 0 10px #ff9100; }
-            .c-med { background: radial-gradient(circle, #ff3d00, #dd2c00); box-shadow: 0 0 15px #ff3d00; }
-            .c-high { background: radial-gradient(circle, #d50000, #9b0000); box-shadow: 0 0 20px #ff0000; animation: arc-pulse 2s infinite; }
+            .c-low { background: radial-gradient(circle, #ff9100, #ff6d00); box-shadow: 0 0 15px #ff9100; }
+            .c-med { background: radial-gradient(circle, #ff3d00, #dd2c00); box-shadow: 0 0 25px #ff3d00; }
+            .c-high { background: radial-gradient(circle, #d50000, #800000); box-shadow: 0 0 35px #ff0000; animation: arc-pulse 1.8s infinite; }
 
-            @keyframes arc-pulse { 0% { transform: scale(1); box-shadow: 0 0 10px #f00; } 50% { transform: scale(1.05); box-shadow: 0 0 25px #f00; } 100% { transform: scale(1); box-shadow: 0 0 10px #f00; } }
+            @keyframes arc-pulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.4); } 100% { transform: scale(1); filter: brightness(1); } }
 
-            /* PET ICON STARK */
             .pet-glow-icon { width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
-            @keyframes pet-pulse { 0% { transform: scale(1); filter: brightness(1); } 50% { transform: scale(1.1); filter: brightness(1.3); } 100% { transform: scale(1); filter: brightness(1); } }
+            @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-            .leaflet-control-layers-expanded { background: rgba(255,255,255,0.9) !important; border: 2px solid #ff4400 !important; border-radius: 12px; font-weight: bold; padding: 10px; }
+            .leaflet-control-layers-expanded { background: rgba(255,255,255,0.95) !important; border: 2px solid #ff4400 !important; border-radius: 12px; font-weight: bold; padding: 12px; }
         </style>
     </head>
     <body>
@@ -70,7 +67,7 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- 1. CONFIGURACIÓN BASE ---
+        // --- 1. MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gRelieve = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
@@ -79,22 +76,22 @@
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-        // --- 2. CAPA ZONAS VOLCÁNICAS (COLORES TÉCNICOS RESTAURADOS) ---
+        // --- 2. ZONAS VOLCÁNICAS (COLORES RE-ESTABILIZADOS) ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
                 var col = "#ffffff";
-                if (/ALI\s?1/.test(d)) col = "#ff0000";      // Peligro Extremo
-                else if (/ALI\s?2/.test(d)) col = "#cd853f"; // Alto Peligro
-                else if (/MLI/.test(d)) col = "#ffae00";     // Moderado
-                else if (/BLI/.test(d)) col = "#ffff00";     // Bajo
-                else if (/AI\s?1/.test(d)) col = "#ff8c69";  // Avalanchas
-                else if (/AI\s?2/.test(d)) col = "#b0c4de";  // Indirecto
-                return { stroke: true, color: "#fff", weight: 0.8, fillColor: col, fillOpacity: 0.5 };
+                if (/ALI\s?1/.test(d)) col = "#ff0000";      
+                else if (/ALI\s?2/.test(d)) col = "#cd853f"; 
+                else if (/MLI/.test(d)) col = "#ffae00";     
+                else if (/BLI/.test(d)) col = "#ffff00";     
+                else if (/AI\s?1/.test(d)) col = "#ff8c69";  
+                else if (/AI\s?2/.test(d)) col = "#b0c4de";  
+                return { stroke: true, color: "#fff", weight: 1, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
-        // --- 3. CAPA PET (ESTILO STARK) ---
+        // --- 3. PET (PUNTO DE ENCUENTRO TRANSITORIO) ---
         var petIcon = L.divIcon({ className: 'c-pet-wrapper', html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="20" height="20" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`, iconSize: [32, 32], iconAnchor: [16, 16] });
         
         var layer_PET = L.geoJson(json_PET_5, { 
@@ -104,12 +101,12 @@
                 document.getElementById('content-display').innerHTML = `
                     <div class="info-card pet-box">
                         <strong style="color:#008066;">🛡️ PUNTO DE ENCUENTRO TRANSITORIO (PET)</strong><hr>
-                        <div class="data-row"><span class="data-label">DETALLES TÉCNICOS:</span><span class="data-value">${f.properties.descriptio || f.properties.Nombre || 'ZONA SEGURA'}</span></div>
+                        <div class="data-row"><span class="data-label">DETALLES:</span><span class="data-value">${f.properties.descriptio || f.properties.Nombre || 'ZONA SEGURA'}</span></div>
                     </div>`;
             }); }
         }).addTo(map);
 
-        // --- 4. CLUSTERS DE VIVIENDAS (LAVA FLOW STYLE) ---
+        // --- 4. CLUSTERS DE VIVIENDAS (CORREGIDO PARA VISIBILIDAD ALEJADA) ---
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => L.marker(latlng, { 
                 icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1"/></svg>', className: '', iconSize: [22, 22] }) 
@@ -117,17 +114,19 @@
         });
 
         var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 100,
+            maxClusterRadius: 120, // Aumentado para agrupar mejor al estar lejos
+            disableClusteringAtZoom: null, // Nunca desactivar el clúster
+            removeOutsideVisibleBounds: false, // Mantener activos fuera de pantalla
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var cClass = count < 20 ? 'c-low' : count < 80 ? 'c-med' : 'c-high';
-                return L.divIcon({ html: `<div class="cluster-inner">${count}</div>`, className: `cluster-stark ${cClass}`, iconSize: [40, 40] });
+                return L.divIcon({ html: `<div class="cluster-inner">${count}</div>`, className: `cluster-stark ${cClass}`, iconSize: [45, 45] });
             }
         }).addLayer(layer_viviendas).addTo(map);
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- 5. MOTOR DE DATOS ESTABLE ---
+        // --- 5. LÓGICA DE DATOS ---
         function getStableProp(p, keys) {
             for (let k of keys) {
                 let search = k.toUpperCase().replace(/[\s_]/g, '');
@@ -162,7 +161,6 @@
             var zonas = [];
             var rolesUnicos = new Set();
 
-            // 5.1 Priorización de Zonas (Evita ALI 1 si hay otra)
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature); });
             if (zonas.length > 0) {
                 let z = zonas.length > 1 ? zonas.filter(x => !x.properties.descriptio.toUpperCase().includes("ALI 1"))[0] || zonas[0] : zonas[0];
@@ -176,7 +174,6 @@
                 </div>`;
             }
 
-            // 5.2 Ficha Predial sin duplicidad
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     let p = l.feature.properties;
