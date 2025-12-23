@@ -16,13 +16,14 @@
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 16px; text-align: center; }
             
-            /* CLUSTERS ROJOS */
+            /* CLUSTERS ROJOS DINÁMICOS */
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 10px rgba(0,0,0,0.5); border: 2px solid #fff; }
             .cluster-inner-text { color: white; font-family: 'Arial Black', sans-serif; font-size: 13px; text-shadow: 1px 1px 2px rgba(0,0,0,0.8); }
             .c-low { background: radial-gradient(circle, #ffb74d, #fb8c00); }
             .c-med { background: radial-gradient(circle, #ff7043, #f4511e); }
             .c-high { background: radial-gradient(circle, #ef5350, #b71c1c); box-shadow: 0 0 15px #ff0000; }
 
+            /* FICHAS INFORMATIVAS */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
@@ -30,6 +31,14 @@
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
+
+            /* ICONO PET */
+            .pet-glow-icon { 
+                width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
+                display: flex; align-items: center; justify-content: center; 
+                box-shadow: 0 0 15px 5px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.2s infinite; 
+            }
+            @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         </style>
     </head>
     <body>
@@ -44,7 +53,7 @@
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/markercluster.js"></script>
         <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script> 
 
         <script src="data/riesgo_volcan_zonas_3.js"></script>
@@ -56,30 +65,30 @@
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
 
-        // --- RESTAURACIÓN DE COLORES DE RIESGO ---
+        // CAPA RIESGO CON COLORES TÉCNICOS
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase().trim();
                 var col = "#ffffff";
-                // Colores técnicos por zona
-                if (/ALI\s?1/.test(d)) col = "#ff0000";      // Rojo
-                else if (/ALI\s?2/.test(d)) col = "#cd853f"; // Café claro (Perú)
-                else if (/MLI/.test(d)) col = "#ffae00";     // Naranja
-                else if (/MI/.test(d)) col = "#b8860b";      // Oro oscuro
-                else if (/BLI/.test(d)) col = "#ffff00";     // Amarillo
-                else if (/AI\s?1/.test(d)) col = "#ff8c69";  // Salmón
-                else if (/AI\s?2/.test(d)) col = "#b0c4de";  // Azul acero
+                if (/ALI\s?1/.test(d)) col = "#ff0000";      
+                else if (/ALI\s?2/.test(d)) col = "#cd853f"; 
+                else if (/MLI/.test(d)) col = "#ffae00";     
+                else if (/MI/.test(d)) col = "#b8860b";      
+                else if (/BLI/.test(d)) col = "#ffff00";     
+                else if (/AI\s?1/.test(d)) col = "#ff8c69";  
+                else if (/AI\s?2/.test(d)) col = "#b0c4de";  
                 return { stroke: true, color: "#fff", weight: 0.8, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
-        // VIVIENDAS Y CLUSTERS
+        // ICONO CASA (SIN FONDO)
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => L.marker(latlng, { 
                 icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22" style="filter: drop-shadow(2px 2px 1px rgba(0,0,0,0.9));"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="none" stroke="white" stroke-width="2"/></svg>', className: '', iconSize: [22, 22] }) 
             })
         });
 
+        // CLUSTERS ROJOS
         var clusterV = L.markerClusterGroup({ 
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
@@ -109,7 +118,6 @@
                 if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase());
             });
 
-            // Lógica de priorización: Ignorar ALI 1 si hay otra zona más específica
             var zonaFinal = zonas.filter(z => !z.includes("ALI 1"))[0] || (zonas.find(z => z.includes("ALI 1")) ? "ALI 1 (ÁREA DE MUY ALTO PELIGRO)" : "");
             if (zonaFinal) html += `<div class="info-card riesgo-box"><strong>PELIGRO VOLCÁNICO:</strong><br>${zonaFinal}</div>`;
 
@@ -118,17 +126,18 @@
                     var p = l.feature.properties;
                     var rol = getProp(p, ['ROL', 'Rol', 'ID_ROL']);
                     var recepcion = getProp(p, ['NUMERO_REC', 'NUMERO REC', 'NUM_REC', 'RECEPCION']);
-                    var aprobacion = getProp(p, ['APROBACION', 'FECHA_APROB']);
+                    var aprobacion = getProp(p, ['APROBACION', 'FECHA_APROB', 'FECHA APROBACION']);
 
                     if (rol !== "SIN INFORMACIÓN" && !rolesProcesados.has(rol)) {
                         var casas = 0;
                         layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(v.feature.geometry.coordinates, l.feature)) casas++; });
 
+                        // NUEVO ORDEN: ROL -> APROBACION -> NUMERO RECEPCION -> VIVIENDAS
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                             <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${rol}</span></div>
-                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${recepcion}</span></div>
                             <div class="data-row"><span class="data-label">APROBACIÓN PERMISO:</span><span class="data-value">${aprobacion}</span></div>
-                            <div class="data-row"><span class="data-label">VIVIENDAS:</span><span class="data-value">${casas}</span></div></div>`;
+                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${recepcion}</span></div>
+                            <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div></div>`;
                         rolesProcesados.add(rol);
                     }
                 }
