@@ -16,7 +16,7 @@
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 16px; text-align: center; }
             
-            /* ESTADÍSTICAS FLOTANTES */
+            /* PANEL ESTADÍSTICO */
             #stats-overlay {
                 position: absolute; top: 20px; left: 60px; z-index: 1000;
                 background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px;
@@ -27,7 +27,7 @@
             .stat-label { font-size: 9px; text-transform: uppercase; display: block; color: #fff; opacity: 0.8; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
-            /* FICHAS */
+            /* FICHAS TÁCTICAS */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
@@ -48,15 +48,15 @@
         <div id="main-container">
             <div id="map">
                 <div id="stats-overlay">
-                    <div class="stat-item"><span class="stat-label">Viviendas en Vista</span><span id="viviendas-count" class="stat-value">0</span></div>
-                    <div class="stat-item"><span class="stat-label">Población (f:3)</span><span id="poblacion-count" class="stat-value">0</span></div>
+                    <div class="stat-item"><span class="stat-label">Viviendas en Pantalla</span><span id="viviendas-count" class="stat-value">0</span></div>
+                    <div class="stat-item"><span class="stat-label">Población Estimada (f:3)</span><span id="poblacion-count" class="stat-value">0</span></div>
                     <div class="stat-item" style="border:none;"><span class="stat-label">PETs Disponibles</span><span id="pet-count" class="stat-value">0</span></div>
                 </div>
             </div>
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ESTABLE.<br>Haga clic para escanear.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA BASE ACTIVO.<br>Haga clic en el mapa para analizar.</p>
                 </div>
             </div>
         </div>
@@ -71,7 +71,7 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // MAPAS BASE
+        // --- CONFIGURACIÓN DE MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
@@ -80,9 +80,9 @@
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
-        var layer_linea_evac = L.layerGroup().addTo(map);
+        var layer_linea_vida = L.layerGroup().addTo(map);
 
-        // CAPAS GEOJSON
+        // --- CARGA DE CAPAS GEOGRÁFICAS ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: f => ({ stroke: true, color: "#fff", weight: 1, fillColor: f.properties.descriptio?.toUpperCase().includes("ALI 1") ? "#ff0000" : "#cd853f", fillOpacity: 0.5 })
         }).addTo(map);
@@ -101,7 +101,7 @@
         var clusterV = L.markerClusterGroup().addLayer(layer_viviendas).addTo(map);
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // ACTUALIZAR ESTADÍSTICAS
+        // --- FUNCIÓN DE ESTADÍSTICAS ---
         function updateStats() {
             var b = map.getBounds(); var v = 0; var p = 0;
             layer_viviendas.eachLayer(l => { if (b.contains(l.getLatLng())) v++; });
@@ -112,22 +112,23 @@
         }
         map.on('moveend', updateStats); updateStats();
 
+        // --- LÓGICA DE PROPIEDADES ---
         function getStableProp(p, keys) {
             for (let k of keys) {
                 let search = k.toUpperCase().replace(/[\s_]/g, '');
                 let foundKey = Object.keys(p).find(original => original.toUpperCase().replace(/[\s_]/g, '') === search);
-                if (foundKey && p[foundKey]) return p[foundKey];
+                if (foundKey && p[foundKey] !== null) return p[foundKey];
             }
             return "SIN INFORMACIÓN";
         }
 
-        // CLICK PRINCIPAL
+        // --- EVENTO CLIC (PROTOCOLO BASE) ---
         map.on('click', e => {
-            layer_linea_evac.clearLayers();
+            layer_linea_vida.clearLayers();
             var pt = [e.latlng.lng, e.latlng.lat];
             var sideHtml = "";
             
-            // 1. PET Cercano (Local)
+            // 1. PET Más Cercano (Distancia Lineal)
             var minDist = Infinity; var targetPET = null;
             layer_PET.eachLayer(l => {
                 var d = map.distance(e.latlng, l.getLatLng());
@@ -135,19 +136,26 @@
             });
 
             if (targetPET) {
-                L.polyline([e.latlng, targetPET], { color: '#00ffcc', weight: 3, dashArray: '10, 10' }).addTo(layer_linea_evac);
+                L.polyline([e.latlng, targetPET], { color: '#00ffcc', weight: 3, dashArray: '10, 10', opacity: 0.8 }).addTo(layer_linea_vida);
                 sideHtml += `<div class="info-card evac-box"><strong>🛡️ PROXIMIDAD DE SEGURIDAD</strong><hr>
                     <div class="data-row"><span class="data-label">AL PET MÁS CERCANO:</span><span class="data-value">${(minDist/1000).toFixed(2)} KM</span></div>
                     </div>`;
             }
 
-            // 2. Riesgo y Predios
-            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA:</strong> ${l.feature.properties.descriptio.toUpperCase()}</div>`; });
+            // 2. Análisis de Riesgo
+            layer_riesgo.eachLayer(l => {
+                if (turf.booleanPointInPolygon(pt, l.feature)) {
+                    sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA RIESGO:</strong><br>${l.feature.properties.descriptio.toUpperCase()}</div>`;
+                }
+            });
+
+            // 3. Ficha Predial
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
                     var nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC']);
-                    if (nRec.length === 4 && parseInt(nRec) >= 1900) nRec = "SIN INFORMACIÓN";
+                    if (nRec.length === 4 && parseInt(nRec) >= 1900) nRec = "SIN INFORMACIÓN"; // Filtro de años
+
                     var casas = 0;
                     clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) casas++; });
                     
@@ -158,10 +166,22 @@
                         <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div></div>`;
                 }
             });
-            document.getElementById('content-display').innerHTML = sideHtml;
+            document.getElementById('content-display').innerHTML = sideHtml || "Sin datos en esta ubicación.";
         });
 
-        L.control.layers({ "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "⛰️ Relieve": gTerrain, "🗺️ OSM": osm }, { "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET }, { collapsed: false }).addTo(map);
+        // --- CONTROL DE CAPAS ---
+        L.control.layers({ 
+            "🌐 Híbrido": gHybrid, 
+            "🛰️ Satélite": gSat, 
+            "⛰️ Relieve": gTerrain, 
+            "🗺️ OSM": osm 
+        }, { 
+            "🌋 Zonas": layer_riesgo, 
+            "📏 Predios": layer_predios, 
+            "🏠 Viviendas": clusterV, 
+            "🟢 PET": layer_PET 
+        }, { collapsed: false }).addTo(map);
+
         </script>
     </body>
 </html>
