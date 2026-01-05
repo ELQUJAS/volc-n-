@@ -26,7 +26,7 @@
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
 
-            /* PET ICON ANIMADO */
+            /* PET ICON */
             .pet-glow-icon { 
                 width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
                 display: flex; align-items: center; justify-content: center; 
@@ -124,7 +124,6 @@
 
         var clusterV = L.markerClusterGroup({ 
             maxClusterRadius: 100,
-            removeOutsideVisibleBounds: false,
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var cClass = count < 20 ? 'c-low' : count < 100 ? 'c-med' : 'c-high';
@@ -151,14 +150,12 @@
             var zonasEncontradas = [];
             var rolesProcesados = new Set();
 
-            // 1. Detección de Zonas de Riesgo
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonasEncontradas.push(l.feature.properties.descriptio.toUpperCase()); });
             if (zonasEncontradas.length > 0) {
                 var zonaFinal = zonasEncontradas.length > 1 ? zonasEncontradas.filter(z => !z.includes("ALI 1"))[0] || zonasEncontradas[0] : zonasEncontradas[0];
                 html += `<div class="info-card riesgo-box"><strong>🌋 ZONA VOLCÁNICA:</strong><br>${zonaFinal}</div>`;
             }
 
-            // 2. Detección de Predios e Información Predial
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
@@ -166,7 +163,16 @@
                     
                     if (!rolesProcesados.has(rol)) {
                         var nAprob = getStableProp(p, ['APROBACION', 'NUMERO_APROBACION', 'N_APROB']);
-                        var nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION', 'N_REC']);
+                        
+                        // --- LÓGICA DE LIMPIEZA DE AÑO CALENDARIO ---
+                        var nRecRaw = getStableProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION', 'N_REC']);
+                        var nRec = nRecRaw;
+                        
+                        // Si el valor es puramente numérico y parece un año entre 1900 y 2026, lo descartamos
+                        var yearVal = parseInt(nRecRaw);
+                        if (!isNaN(yearVal) && String(nRecRaw).length === 4 && yearVal >= 1900 && yearVal <= 2026) {
+                            nRec = "SIN INFORMACIÓN";
+                        }
 
                         var casas = 0;
                         clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) casas++; });
@@ -183,7 +189,7 @@
             document.getElementById('content-display').innerHTML = html || "Sin datos en esta ubicación.";
         });
 
-        // --- LEYENDA Y CONTROLES ---
+        // --- LEYENDA ---
         L.control.layers({ "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "⛰️ Relieve": gTerrain, "🗺️ OSM": osm }, { "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET }, { collapsed: false }).addTo(map);
 
         </script>
