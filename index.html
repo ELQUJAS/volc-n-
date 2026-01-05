@@ -50,7 +50,7 @@
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para escanear.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear.</p>
                 </div>
             </div>
         </div>
@@ -134,7 +134,7 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- MOTOR DE VINCULACIÓN ESTABLE ---
+        // --- MOTOR DE VINCULACIÓN ---
         function getStableProp(p, keys) {
             for (let k of keys) {
                 let search = k.toUpperCase().replace(/[\s_]/g, '');
@@ -151,37 +151,29 @@
             var zonasEncontradas = [];
             var rolesProcesados = new Set();
 
-            // 1. Identificar Zona de Riesgo
+            // 1. Detección de Zonas de Riesgo
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonasEncontradas.push(l.feature.properties.descriptio.toUpperCase()); });
             if (zonasEncontradas.length > 0) {
                 var zonaFinal = zonasEncontradas.length > 1 ? zonasEncontradas.filter(z => !z.includes("ALI 1"))[0] || zonasEncontradas[0] : zonasEncontradas[0];
                 html += `<div class="info-card riesgo-box"><strong>🌋 ZONA VOLCÁNICA:</strong><br>${zonaFinal}</div>`;
             }
 
-            // 2. Identificar Predio y vincular campos
+            // 2. Detección de Predios e Información Predial
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
                     var rol = getStableProp(p, ['ROL']);
                     
                     if (!rolesProcesados.has(rol)) {
-                        // VINCULACIÓN ESPECÍFICA: Priorizamos NUMERO_REC para el campo de recepción
                         var nAprob = getStableProp(p, ['APROBACION', 'NUMERO_APROBACION', 'N_APROB']);
                         var nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION', 'N_REC']);
 
-                        // Si el dato parece ser un año y no un número correlativo, lo advertimos
-                        if (String(nRec).length === 4 && parseInt(nRec) >= 1900) {
-                            // Opcional: nRec = "CONSULTAR D.O.M."; 
-                        }
-
                         var casas = 0;
-                        clusterV.eachLayer(v => { 
-                            if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) casas++; 
-                        });
+                        clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) casas++; });
 
                         html += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                             <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${rol}</span></div>
-                            <div class="data-row"><span class="data-label">APROBACIÓN PERMISO:</span><span class="data-value">${nAprob}</span></div>
+                            <div class="data-row"><span class="data-label">NÚMERO APROBACIÓN PERMISO:</span><span class="data-value">${nAprob}</span></div>
                             <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div>
                             <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div></div>`;
                         rolesProcesados.add(rol);
@@ -191,18 +183,8 @@
             document.getElementById('content-display').innerHTML = html || "Sin datos en esta ubicación.";
         });
 
-        // --- LEYENDA TOTAL ---
-        L.control.layers({ 
-            "🌐 Híbrido": gHybrid, 
-            "🛰️ Satélite": gSat, 
-            "⛰️ Relieve": gTerrain, 
-            "🗺️ OSM": osm 
-        }, { 
-            "🌋 Zonas": layer_riesgo, 
-            "📏 Predios": layer_predios, 
-            "🏠 Viviendas": clusterV, 
-            "🟢 PET": layer_PET 
-        }, { collapsed: false }).addTo(map);
+        // --- LEYENDA Y CONTROLES ---
+        L.control.layers({ "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "⛰️ Relieve": gTerrain, "🗺️ OSM": osm }, { "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET }, { collapsed: false }).addTo(map);
 
         </script>
     </body>
