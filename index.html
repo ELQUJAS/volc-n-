@@ -64,7 +64,7 @@
                         <span id="viviendas-count" class="stat-value">0</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Población Estimada</span>
+                        <span class="stat-label">Población Estimada (f:3)</span>
                         <span id="poblacion-count" class="stat-value">0</span>
                     </div>
                     <div class="stat-item" style="border:none;">
@@ -159,31 +159,27 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- LÓGICA DE ESTADÍSTICAS EN TIEMPO REAL ---
+        // --- LÓGICA DE ESTADÍSTICAS (FACTOR 3) ---
         function updateLiveStats() {
             var bounds = map.getBounds();
             var vCount = 0;
             var pCount = 0;
 
-            // Contar viviendas dentro del mapa actual
             layer_viviendas.eachLayer(function(l) {
                 if (bounds.contains(l.getLatLng())) vCount++;
             });
 
-            // Contar PETs dentro del mapa actual
             layer_PET.eachLayer(function(l) {
                 if (bounds.contains(l.getLatLng())) pCount++;
             });
 
-            // Actualizar interfaz
             document.getElementById('viviendas-count').innerText = vCount;
-            document.getElementById('poblacion-count').innerText = Math.round(vCount * 3.8);
+            document.getElementById('poblacion-count').innerText = Math.round(vCount * 3);
             document.getElementById('pet-count').innerText = pCount;
         }
 
-        // Escuchar movimiento del mapa
         map.on('moveend', updateLiveStats);
-        updateLiveStats(); // Ejecución inicial
+        updateLiveStats();
 
         // --- MOTOR DE VINCULACIÓN ---
         function getStableProp(p, keys) {
