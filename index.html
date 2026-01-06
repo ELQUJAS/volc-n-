@@ -17,17 +17,17 @@
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; display: flex; flex-direction: column; z-index: 2000; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             #panel-content { flex-grow: 1; overflow-y: auto; padding: 20px; }
             
-            /* SECCIÓN DE BÚSQUEDA TÁCTICA (FIJA) */
+            /* SECCIÓN DE BÚSQUEDA UNIFICADA */
             #search-section { padding: 15px; background: #00283c; border-top: 4px solid #00ffcc; z-index: 3000; }
             .search-group { margin-bottom: 12px; }
             .search-label { color: #00ffcc; font-size: 9px; font-weight: 800; display: block; margin-bottom: 5px; text-transform: uppercase; }
-            .search-input { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; outline: none; margin-bottom: 5px; }
+            .search-input { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; outline: none; margin-bottom: 5px; box-sizing: border-box; }
             .coord-btn { width: 100%; padding: 8px; background: #00ffcc; color: #00283c; border: none; border-radius: 4px; font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 11px; }
             .coord-btn:hover { background: #fff; }
 
             .suggestions-list { position: absolute; bottom: 100%; left: 15px; width: calc(100% - 30px); background: white; max-height: 150px; overflow-y: auto; display: none; border-radius: 4px; box-shadow: 0 -4px 10px rgba(0,0,0,0.3); z-index: 3001; }
             .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; font-size: 12px; }
-            .suggestion-item:hover { background: #00ffcc; color: #000; }
+            .suggestion-item:hover { background: #00ffcc; }
 
             .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 16px; text-align: center; }
             
@@ -63,15 +63,14 @@
                 <div id="panel-content">
                     <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                     <div id="content-display">
-                        <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA RESTAURADO.<br>Utilice los buscadores tácticos.</p>
+                        <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Use los buscadores tácticos.</p>
                     </div>
                 </div>
                 
                 <div id="search-section">
                     <div class="search-group">
-                        <span class="search-label">📍 BUSCADOR DE COORDENADAS</span>
-                        <input type="text" id="coord-lat" class="search-input" placeholder="Latitud (ej: -39.293203)">
-                        <input type="text" id="coord-lng" class="search-input" placeholder="Longitud (ej: -72.207022)">
+                        <span class="search-label">📍 LOCALIZADOR GPS (LAT, LNG)</span>
+                        <input type="text" id="coord-input" class="search-input" placeholder="-39.293203, -72.207022">
                         <button class="coord-btn" onclick="buscarCoordenadas()">Ir a Posición</button>
                     </div>
 
@@ -129,24 +128,20 @@
                 return L.marker([lat, lng], { icon: L.divIcon({ html: '🏠', className: '', iconSize: [22, 22] }) });
             }
         });
-        var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 80,
-            iconCreateFunction: c => {
-                var count = c.getChildCount();
-                var cls = count < 20 ? 'c-low' : count < 100 ? 'c-med' : 'c-high';
-                return L.divIcon({ html: `<div>${count}</div>`, className: `cluster-dynamic ${cls}`, iconSize: [40, 40] });
-            }
-        }).addLayer(layer_viviendas).addTo(map);
-
+        var clusterV = L.markerClusterGroup({ maxClusterRadius: 80 }).addLayer(layer_viviendas).addTo(map);
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- BUSCADOR COORDENADAS ---
+        // --- BUSCADOR COORDENADAS (BARRA ÚNICA) ---
         function buscarCoordenadas() {
-            var lat = parseFloat(document.getElementById('coord-lat').value);
-            var lng = parseFloat(document.getElementById('coord-lng').value);
+            var val = document.getElementById('coord-input').value;
+            // Limpia caracteres innecesarios y separa por coma o espacio
+            var coords = val.replace(/[^0-9.\- ,]/g, '').split(/[, ]+/);
+            
+            var lat = parseFloat(coords[0]);
+            var lng = parseFloat(coords[1]);
             
             if (isNaN(lat) || isNaN(lng)) {
-                alert("Por favor ingrese coordenadas válidas.");
+                alert("Formato inválido. Use: Latitud, Longitud");
                 return;
             }
 
@@ -154,7 +149,7 @@
             map.flyTo(latlng, 17);
             
             search_marker_layer.clearLayers();
-            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b>PUNTO BUSCADO:</b><br>${lat}, ${lng}`).openPopup();
+            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b>COORDENADAS GPS:</b><br>${lat}, ${lng}`).openPopup();
             
             var predioTocado = null;
             layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon([lng, lat], l.feature)) predioTocado = l.feature; });
