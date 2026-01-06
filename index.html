@@ -16,18 +16,11 @@
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; padding: 20px; z-index: 2000; overflow-y: auto; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 16px; text-align: center; }
             
-            /* ESTADÍSTICAS FLOTANTES */
-            #stats-overlay {
-                position: absolute; top: 20px; left: 60px; z-index: 1000;
-                background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px;
-                border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px);
-                min-width: 220px; pointer-events: none;
-            }
+            #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); min-width: 220px; pointer-events: none; }
             .stat-item { margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.2); padding-bottom: 4px; }
             .stat-label { font-size: 9px; text-transform: uppercase; display: block; color: #fff; opacity: 0.8; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
-            /* FICHAS ESTÉTICAS */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
@@ -39,22 +32,12 @@
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
             .evac-box .data-value { color: #fff; font-size: 14px; }
 
-            /* PET ICON PULSANTE */
-            .pet-glow-icon { 
-                width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; 
-                display: flex; align-items: center; justify-content: center; 
-                box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; 
-            }
+            .pet-glow-icon { width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-            /* CLUSTERS DE VIVIENDAS */
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; }
             .cluster-inner-text { color: white; font-weight: 900; }
-            .c-low { background: #fb8c00; } 
-            .c-med { background: #f4511e; } 
-            .c-high { background: #b71c1c; }
-
-            .leaflet-control-layers-expanded { padding: 12px; background: #fff; border: 2px solid #00ffcc !important; border-radius: 10px; font-weight: bold; }
+            .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
         </style>
     </head>
     <body>
@@ -69,7 +52,7 @@
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA RESTAURADO.<br>Haga clic para escanear.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear.</p>
                 </div>
             </div>
         </div>
@@ -84,7 +67,6 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- RESTAURACIÓN DE MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
@@ -95,7 +77,6 @@
 
         var layer_route = L.layerGroup().addTo(map);
 
-        // --- ZONAS VOLCÁNICAS ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
@@ -103,24 +84,14 @@
                 if (/ALI\s?1/.test(d)) col = "#ff0000";
                 else if (/ALI\s?2/.test(d)) col = "#cd853f";
                 else if (/MLI/.test(d)) col = "#ffae00";
-                else if (/MI/.test(d)) col = "#b8860b";
-                else if (/BLI/.test(d)) col = "#ffff00";
-                else if (/AI\s?1/.test(d)) col = "#ff8c69";
-                else if (/AI\s?2/.test(d)) col = "#b0c4de";
+                else col = "#b8860b";
                 return { stroke: true, color: "#fff", weight: 1, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
-        // --- ESTÉTICA PET RESTAURADA ---
-        var petIcon = L.divIcon({
-            className: 'c-pet-wrapper',
-            html: `<div class="pet-glow-icon"><svg viewBox="0 0 24 24" width="18" height="18" fill="black"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>`,
-            iconSize: [32, 32], iconAnchor: [16, 16]
-        });
-
+        var petIcon = L.divIcon({ className: '', html: '<div class="pet-glow-icon">🛡️</div>', iconSize: [32, 32], iconAnchor: [16, 16] });
         var layer_PET = L.geoJson(json_PET_5, { pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }) }).addTo(map);
 
-        // --- CLUSTER DE VIVIENDAS RESTAURADO ---
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => {
                 var lat = latlng.lat, lng = latlng.lng;
@@ -130,7 +101,7 @@
         });
 
         var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 100,
+            maxClusterRadius: 80,
             iconCreateFunction: function(cluster) {
                 var count = cluster.getChildCount();
                 var cClass = count < 20 ? 'c-low' : count < 100 ? 'c-med' : 'c-high';
@@ -140,7 +111,6 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- ESTADÍSTICAS ---
         function updateStats() {
             var b = map.getBounds(), v = 0, p = 0;
             layer_viviendas.eachLayer(l => { if (b.contains(l.getLatLng())) v++; });
@@ -151,14 +121,16 @@
         }
         map.on('moveend', updateStats); updateStats();
 
-        // --- MOTOR VIAL ASÍNCRONO ---
         async function calcularRutaVial(start, end) {
             try {
                 const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`);
                 const data = await response.json();
                 if (data.code === 'Ok') {
                     layer_route.clearLayers();
-                    L.geoJSON(data.routes[0].geometry, { style: { color: '#00ffcc', weight: 4, opacity: 0.8, dashArray: '5, 10' } }).addTo(layer_route);
+                    // RUTA RESALTADA: Cian Neón con sombra para mayor visibilidad
+                    L.geoJSON(data.routes[0].geometry, { 
+                        style: { color: '#00ffff', weight: 6, opacity: 0.9, lineCap: 'round' } 
+                    }).addTo(layer_route);
                     document.getElementById('dist-vial-val').innerText = (data.routes[0].distance / 1000).toFixed(2) + " KM";
                 }
             } catch (e) { document.getElementById('dist-vial-val').innerText = "ERROR DE RED"; }
@@ -173,26 +145,23 @@
             return "SIN INFORMACIÓN";
         }
 
-        // --- SCANNER DE CLICK (RESTAURADO) ---
         map.on('click', e => {
             layer_route.clearLayers();
             var pt = [e.latlng.lng, e.latlng.lat];
             var sideHtml = "";
-            
-            // 1. Ruta y PET
+            var rolesUnicos = new Set(); // PROTOCOLO ANTI-DUPLICADOS
+
             var minDist = Infinity, targetPET = null;
             layer_PET.eachLayer(l => {
                 var d = map.distance(e.latlng, l.getLatLng());
                 if (d < minDist) { minDist = d; targetPET = l.getLatLng(); }
             });
 
-            sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD</strong><hr>
-                <div class="data-row"><span class="data-label">DISTANCIA LINEAL:</span><span class="data-value">${(minDist/1000).toFixed(2)} KM</span></div>
+            sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD VIAL</strong><hr>
                 <div class="data-row"><span class="data-label">DISTANCIA VIAL REAL:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div>
                 </div>`;
             if (targetPET) calcularRutaVial(e.latlng, targetPET);
 
-            // 2. Riesgo Prioridad ALI 1
             var zonas = [];
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase()); });
             if (zonas.length > 0) {
@@ -200,21 +169,25 @@
                 sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA:</strong> ${zFinal}</div>`;
             }
 
-            // 3. Ficha Predial Restaurada
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
-                    var nAprob = getStableProp(p, ['APROBACION', 'N_APROB']);
-                    var nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC']);
-                    if (nRec.length === 4 && parseInt(nRec) >= 1900) nRec = "SIN INFORMACIÓN";
-                    var casas = 0;
-                    clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) casas++; });
+                    var rol = getStableProp(p, ['ROL']);
                     
-                    sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
-                        <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${getStableProp(p, ['ROL'])}</span></div>
-                        <div class="data-row"><span class="data-label">NÚMERO APROBACIÓN PERMISO:</span><span class="data-value">${nAprob}</span></div>
-                        <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div>
-                        <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div></div>`;
+                    if (!rolesUnicos.has(rol)) { // VALIDACIÓN DE UNICIDAD
+                        var nAprob = getStableProp(p, ['APROBACION', 'N_APROB']);
+                        var nRec = getStableProp(p, ['NUMERO_REC', 'NUM_REC']);
+                        if (nRec.length === 4 && parseInt(nRec) >= 1900) nRec = "SIN INFORMACIÓN";
+                        var casas = 0;
+                        clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], l.feature)) casas++; });
+                        
+                        sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
+                            <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${rol}</span></div>
+                            <div class="data-row"><span class="data-label">NÚMERO APROBACIÓN PERMISO:</span><span class="data-value">${nAprob}</span></div>
+                            <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div>
+                            <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div></div>`;
+                        rolesUnicos.add(rol);
+                    }
                 }
             });
             document.getElementById('content-display').innerHTML = sideHtml;
