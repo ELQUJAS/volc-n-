@@ -23,17 +23,23 @@
             #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); pointer-events: none; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
+            /* POPUPS TÁCTICOS PET */
             .leaflet-popup-content-wrapper { background: #00283c !important; color: #fff !important; border: 2px solid #00ffcc; border-radius: 8px; }
             .leaflet-popup-tip { background: #00ffcc !important; }
             .pet-popup-title { color: #00ffcc; font-weight: 800; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid rgba(0, 255, 204, 0.3); margin-bottom: 8px; display: block; }
+            .pet-popup-desc { font-size: 13px; font-weight: 600; }
 
+            /* ESTÉTICA DE CLÚSTERES RESTAURADA */
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-            .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
+            .c-low { background: #fb8c00; }     /* NARANJA */
+            .c-med { background: #f4511e; }     /* NARANJA OSCURO */
+            .c-high { background: #b71c1c; }    /* ROJO TÁCTICO */
 
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #ff0000; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
             .evac-box { border-left-color: #00ffcc; background: #00283c; color: #fff; }
+            
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
@@ -67,7 +73,7 @@
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
         <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script> 
 
         <script src="data/riesgo_volcan_zonas_3.js"></script>
@@ -77,6 +83,7 @@
 
         <script>
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
+        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
@@ -103,14 +110,19 @@
             interactive: false 
         }).addTo(map);
 
+        var petIcon = L.divIcon({ className: '', html: '<div class="pet-human-icon">👥</div>', iconSize: [36, 36], iconAnchor: [18, 18] });
         var layer_PET = L.geoJson(json_PET_5, { 
-            pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ className: 'pet-human-icon', html: '👥', iconSize: [36, 36] }) }).bindPopup(`<span class="pet-popup-title">Punto de Encuentro</span><div style="font-size:13px">${getProp(f.properties, ['descriptio'])}</div>`)
+            pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }).bindPopup(
+                `<span class="pet-popup-title">Punto de Encuentro Transitorio</span>
+                 <div class="pet-popup-desc">${getProp(f.properties, ['descriptio', 'nombre'])}</div>`
+            )
         }).addTo(map);
 
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '🏠', className: '', iconSize: [20, 20] }) })
         });
 
+        // RE-IMPLEMENTACIÓN DE CLÚSTERES TÁCTICOS
         var clusterV = L.markerClusterGroup({ 
             maxClusterRadius: 80,
             iconCreateFunction: c => {
@@ -135,46 +147,35 @@
             } catch (e) { document.getElementById('dist-vial-val').innerText = "ERROR RED"; }
         }
 
-        // --- FUNCIÓN DE CONTEO REAL-TIME CORREGIDA ---
         function procesar(latlng, fPredio) {
-            var pt = turf.point([latlng.lng, latlng.lat]); 
-            var sideHtml = "";
-            
+            var pt = turf.point([latlng.lng, latlng.lat]); var sideHtml = "";
             var minDist = Infinity, targetPET = null;
             layer_PET.eachLayer(l => { var d = map.distance(latlng, l.getLatLng()); if (d < minDist) { minDist = d; targetPET = l.getLatLng(); } });
-            sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA AL PET CERCANO</strong><hr><div class="data-row"><span class="data-label">DISTANCIA VIAL:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
+            sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA AL PET MÁS CERCANO</strong><hr><div class="data-row"><span class="data-label">DISTANCIA VIAL ESTIMADA:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
             var zonas = [];
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "").toUpperCase()); });
             if (zonas.length > 0) {
                 var z = (zonas.length > 1) ? zonas.filter(z => !z.includes("ALI 1"))[0] || zonas[0] : zonas[0];
-                sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO:</strong><br>${z}</div>`;
+                sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO DETECTADA:</strong><br>${z}</div>`;
             }
 
             if (fPredio) {
                 var p = fPredio.properties;
-                
-                // CONTEO FILTRADO POR GEOMETRÍA DEL PREDIO
-                var casasEnPredio = 0;
-                layer_viviendas.eachLayer(v => {
-                    var viviendaPt = turf.point([v.getLatLng().lng, v.getLatLng().lat]);
-                    if (turf.booleanPointInPolygon(viviendaPt, fPredio)) {
-                        casasEnPredio++;
-                    }
-                });
-                
                 var nRecRaw = getProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION']);
                 var nRec = (String(nRecRaw).length === 4 && parseInt(nRecRaw) >= 1900) ? "Sin información" : nRecRaw;
+                var casas = 0;
+                layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(turf.point([v.getLatLng().lng, v.getLatLng().lat]), fPredio)) casas++; });
                 
                 sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                     <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${getProp(p, ['ROL'])}</span></div>
                     <div class="data-row"><span class="data-label">ZONA / SECTOR:</span><span class="data-value">${getProp(p, ['ZONA', 'SECTOR'])}</span></div>
-                    <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casasEnPredio}</span></div>
+                    <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div>
                     <div class="data-row"><span class="data-label">NÚM. APROBACIÓN:</span><span class="data-value">${getProp(p, ['APROBACION', 'N_APROB'])}</span></div>
                     <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div></div>`;
             }
-            document.getElementById('content-display').innerHTML = sideHtml || "<p style='text-align:center; margin-top:20px'>Punto sin datos.</p>";
+            document.getElementById('content-display').innerHTML = sideHtml || "<p style='text-align:center; padding-top:20px'>Punto sin datos específicos.</p>";
         }
 
         map.on('click', e => {
@@ -192,6 +193,8 @@
             var lat = parseFloat(c[0]), lng = parseFloat(c[1]);
             if (isNaN(lat) || isNaN(lng)) return;
             var latlng = L.latLng(lat, lng);
+            search_marker_layer.clearLayers();
+            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b>GPS: ${lat}, ${lng}</b>`).openPopup();
             map.flyTo(latlng, 17);
             var predio = null;
             layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon(turf.point([lng, lat]), l.feature)) predio = l.feature; });
@@ -215,7 +218,7 @@
                         var l = layer_predios.getLayer(m.id); var c = l.getBounds().getCenter();
                         search_marker_layer.clearLayers();
                         L.geoJson(l.feature, { style: { color: '#00ffcc', weight: 4, fillOpacity: 0.3 } }).addTo(search_marker_layer);
-                        map.flyTo(c, 17); sug.style.display = 'none';
+                        map.flyTo(c, 17); document.getElementById('rol-search').value = m.r; sug.style.display = 'none';
                         procesar(c, l.feature);
                     };
                     sug.appendChild(div);
@@ -232,7 +235,7 @@
         }
         map.on('moveend', updateStats); updateStats();
         
-        L.control.layers({ "🌐 Híbrido": gHybrid, "🗺️ OSM": osm }, { "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET, "🔗 Ruta": layer_route }, { collapsed: false }).addTo(map);
+        L.control.layers({ "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "🗺️ OSM": osm }, { "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET, "🔗 Ruta": layer_route }, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
