@@ -31,8 +31,7 @@
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; position: relative; }
             .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
-            .pet-box { border-left-color: #00ffcc; background: #f0fffb; }
-            .evac-box { border-left: 6px dashed #00ffcc; background: #00283c; color: #fff; }
+            .evac-box { border-left-color: #00ffcc; background: #00283c; color: #fff; }
             
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
@@ -67,7 +66,7 @@
             <div id="side-panel">
                 <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                 <div id="content-display">
-                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear y trazar ruta de evacuación.</p>
+                    <p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic para escanear.</p>
                 </div>
             </div>
         </div>
@@ -82,12 +81,14 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
+        // --- MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
         L.control.zoom({ position: 'bottomleft' }).addTo(map);
 
         var layer_linea_vida = L.layerGroup().addTo(map);
 
+        // --- ZONAS VOLCÁNICAS ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = String(f.properties['descriptio'] || f.properties['NAME'] || "").toUpperCase();
@@ -134,6 +135,7 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
+        // --- ESTADÍSTICAS ---
         function updateLiveStats() {
             var bounds = map.getBounds();
             var vCount = 0; var pCount = 0;
@@ -146,6 +148,7 @@
         map.on('moveend', updateLiveStats);
         updateLiveStats();
 
+        // --- MOTOR DE PROPIEDADES ---
         function getStableProp(p, keys) {
             for (let k of keys) {
                 let search = k.toUpperCase().replace(/[\s_]/g, '');
@@ -155,36 +158,41 @@
             return "SIN INFORMACIÓN";
         }
 
+        // --- SCANNER DE CLICK (CON PRIORIDAD ALI 1) ---
         map.on('click', e => {
             layer_linea_vida.clearLayers();
             var pt = [e.latlng.lng, e.latlng.lat];
             var html = "";
             var rolesProcesados = new Set();
+            var zonasEncontradas = [];
 
-            var minDist = Infinity;
-            var nearestPET = null;
+            // 1. Detección de Zonas y Filtrado ALI 1
+            layer_riesgo.eachLayer(l => {
+                if (turf.booleanPointInPolygon(pt, l.feature)) {
+                    zonasEncontradas.push(l.feature.properties.descriptio.toUpperCase());
+                }
+            });
+
+            if (zonasEncontradas.length > 0) {
+                var tieneAli1 = zonasEncontradas.some(z => z.includes("ALI 1"));
+                var zonaAMostrar = tieneAli1 ? zonasEncontradas.find(z => z.includes("ALI 1")) : zonasEncontradas[0];
+                html += `<div class="info-card riesgo-box"><strong>🌋 ZONA VOLCÁNICA:</strong><br>${zonaAMostrar}</div>`;
+            }
+
+            // 2. Línea de Vida
+            var minDist = Infinity; var nearestPET = null;
             layer_PET.eachLayer(l => {
                 var d = map.distance(e.latlng, l.getLatLng());
                 if (d < minDist) { minDist = d; nearestPET = l.getLatLng(); }
             });
 
             if (nearestPET) {
-                L.polyline([e.latlng, nearestPET], {
-                    color: '#00ffcc', weight: 3, dashArray: '10, 10', opacity: 0.8
-                }).addTo(layer_linea_vida);
-                
-                html += `<div class="info-card evac-box">
-                            <strong>🏃 RUTA DE EVACUACIÓN (LINEAL)</strong><hr>
-                            <div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span class="data-value">${(minDist/1000).toFixed(2)} KM (${Math.round(minDist)} m)</span></div>
-                         </div>`;
+                L.polyline([e.latlng, nearestPET], { color: '#00ffcc', weight: 3, dashArray: '10, 10', opacity: 0.8 }).addTo(layer_linea_vida);
+                html += `<div class="info-card evac-box"><strong>🏃 RUTA DE EVACUACIÓN</strong><hr>
+                    <div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span class="data-value">${(minDist/1000).toFixed(2)} KM</span></div></div>`;
             }
 
-            layer_riesgo.eachLayer(l => {
-                if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    html += `<div class="info-card riesgo-box"><strong>🌋 ZONA VOLCÁNICA:</strong><br>${l.feature.properties.descriptio.toUpperCase()}</div>`;
-                }
-            });
-
+            // 3. Ficha Predial
             layer_predios.eachLayer(l => {
                 if (turf.booleanPointInPolygon(pt, l.feature)) {
                     var p = l.feature.properties;
