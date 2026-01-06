@@ -13,32 +13,39 @@
             html, body { height: 100%; margin: 0; background: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
             #main-container { display: flex; height: 100%; width: 100%; }
             #map { flex-grow: 1; height: 100%; background: #001a2d; position: relative; }
+            
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; display: flex; flex-direction: column; z-index: 2000; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             #panel-content { flex-grow: 1; overflow-y: auto; padding: 20px; }
             
-            #search-section { padding: 15px; background: #00283c; border-top: 4px solid #00ffcc; z-index: 3000; }
-            .search-input { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; outline: none; margin-bottom: 5px; box-sizing: border-box; }
-            .coord-btn { width: 100%; padding: 8px; background: #00ffcc; color: #00283c; border: none; border-radius: 4px; font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 11px; }
+            /* BUSCADOR DESBLOQUEADO */
+            #search-section { padding: 15px; background: #00283c; border-top: 4px solid #00ffcc; z-index: 3000; position: relative; }
+            .search-group { margin-bottom: 12px; position: relative; }
+            .search-label { color: #00ffcc; font-size: 9px; font-weight: 800; display: block; margin-bottom: 5px; text-transform: uppercase; }
+            .search-input { width: 100%; padding: 12px; border: 2px solid transparent; border-radius: 4px; font-weight: bold; font-size: 14px; outline: none; box-sizing: border-box; transition: 0.3s; }
+            .search-input:focus { border-color: #00ffcc; background: #fff; }
+            
+            .suggestions-list { position: absolute; bottom: 100%; left: 0; width: 100%; background: white; max-height: 200px; overflow-y: auto; display: none; border-radius: 4px; box-shadow: 0 -4px 15px rgba(0,0,0,0.5); z-index: 4000; }
+            .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; font-size: 13px; font-weight: 600; }
+            .suggestion-item:hover { background: #00ffcc; color: #00283c; }
 
+            /* ESTADÍSTICAS */
             #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); pointer-events: none; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
+            /* FICHAS */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
-            .riesgo-box { border-left-color: #ff0000; background: #fffbfb; }
-            .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
+            .riesgo-box { border-left-color: #ff0000; }
+            .predio-box { border-left-color: #007d7d; }
             .evac-box { border-left-color: #00ffcc; background: #00283c; color: #fff; }
-            
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
-            .data-value { color: #000; font-weight: bold; font-size: 11px; }
 
-            .pet-human-icon { width: 36px; height: 36px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
+            /* ICONOS */
+            .pet-human-icon { width: 36px; height: 36px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px #00ffcc; animation: pet-pulse 1.5s infinite; }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
-            
+            .vivienda-icon-style { font-size: 18px; text-shadow: 1px 1px 2px #000; }
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; }
             .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
-            
-            .leaflet-control-layers-expanded { padding: 12px; background: #fff; border: 2px solid #00ffcc !important; border-radius: 10px; font-weight: bold; }
         </style>
     </head>
     <body>
@@ -46,7 +53,7 @@
             <div id="map">
                 <div id="stats-overlay">
                     <div style="margin-bottom:8px"><span style="font-size:9px">VIVIENDAS</span><br><span id="viviendas-count" class="stat-value">0</span></div>
-                    <div style="margin-bottom:8px"><span style="font-size:9px">POBLACIÓN (f:3)</span><br><span id="poblacion-count" class="stat-value">0</span></div>
+                    <div style="margin-bottom:8px"><span style="font-size:9px">POBLACIÓN</span><br><span id="poblacion-count" class="stat-value">0</span></div>
                     <div><span style="font-size:9px">PETs</span><br><span id="pet-count" class="stat-value">0</span></div>
                 </div>
             </div>
@@ -56,11 +63,15 @@
                     <div id="content-display"><p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.</p></div>
                 </div>
                 <div id="search-section">
-                    <input type="text" id="coord-input" class="search-input" placeholder="Lat, Lng (GPS)">
-                    <button class="coord-btn" style="margin-bottom:10px" onclick="buscarCoordenadas()">Ir a Posición</button>
-                    <div style="position:relative">
-                        <div id="suggestions" style="position:absolute; bottom:100%; left:0; width:100%; background:white; max-height:150px; overflow-y:auto; display:none; border-radius:4px; box-shadow:0 -4px 10px rgba(0,0,0,0.3); z-index:3001;"></div>
-                        <input type="text" id="rol-search" class="search-input" placeholder="Buscar ROL..." oninput="filtrarRoles()">
+                    <div class="search-group">
+                        <span class="search-label">📍 GPS (Lat, Lng)</span>
+                        <input type="text" id="coord-input" class="search-input" placeholder="-39.29, -72.20">
+                        <button class="coord-btn" style="width:100%; padding:8px; background:#00ffcc; border:none; border-radius:4px; font-weight:800; cursor:pointer;" onclick="buscarCoordenadas()">IR A POSICIÓN</button>
+                    </div>
+                    <div class="search-group" style="margin-bottom:0">
+                        <span class="search-label">🏠 BUSCADOR DE ROLES</span>
+                        <div id="suggestions" class="suggestions-list"></div>
+                        <input type="text" id="rol-search" class="search-input" placeholder="Ej: 125-4..." oninput="filtrarRoles()">
                     </div>
                 </div>
             </div>
@@ -87,29 +98,43 @@
         var layer_route = L.layerGroup().addTo(map);
         var search_marker_layer = L.layerGroup().addTo(map);
 
-        // --- COLORES ZONAS ---
+        // ZONAS CON COLORES TÉCNICOS
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: f => {
                 var d = (f.properties.descriptio || f.properties.DESCRIPTIO || "").toUpperCase();
                 var col = d.includes("ALI 1") ? "#FF0000" : d.includes("ALI 2") ? "#CD853F" : d.includes("MLI") ? "#FFAE00" : d.includes("MI") ? "#B8860B" : "#FFFF00";
-                return { stroke: true, color: "#fff", weight: 0.5, fillColor: col, fillOpacity: 0.5 };
+                return { stroke: true, color: "#fff", weight: 0.8, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
+        // PET ICONO PERSONAS
         var petIcon = L.divIcon({ className: '', html: '<div class="pet-human-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="#00283c"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>', iconSize: [36, 36], iconAnchor: [18, 18] });
-        var layer_PET = L.geoJson(json_PET_5, { pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }).bindPopup(`<b style="color:#00ffcc">PUNTO DE ENCUENTRO TRANSITORIO</b><br>${f.properties.descriptio || 'Zona Segura'}`) }).addTo(map);
+        var layer_PET = L.geoJson(json_PET_5, { pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }).bindPopup(`<b>PET</b>: ${f.properties.descriptio || 'Zona Segura'}`) }).addTo(map);
 
+        // VIVIENDAS CASAS
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
-            pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '🏠', className: '', iconSize: [20, 20] }) })
+            pointToLayer: (f, latlng) => {
+                var lat = latlng.lat, lng = latlng.lng;
+                if (lat > 0 || lng > -60) { var temp = lat; lat = lng; lng = temp; }
+                return L.marker([lat, lng], { icon: L.divIcon({ html: '🏠', className: 'vivienda-icon-style', iconSize: [20, 20] }) });
+            }
         });
-        var clusterV = L.markerClusterGroup({ maxClusterRadius: 80 }).addLayer(layer_viviendas).addTo(map);
+        var clusterV = L.markerClusterGroup({ 
+            maxClusterRadius: 80,
+            iconCreateFunction: c => {
+                var count = c.getChildCount();
+                var cls = count < 20 ? 'c-low' : count < 100 ? 'c-med' : 'c-high';
+                return L.divIcon({ html: `<div>${count}</div>`, className: `cluster-dynamic ${cls}`, iconSize: [40, 40] });
+            }
+        }).addLayer(layer_viviendas).addTo(map);
+
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0.1 } }).addTo(map);
 
+        // FUNCIONES DE PROPIEDADES
         function getProp(p, keys) {
             for (let k of keys) {
-                let s = k.toUpperCase().replace(/[\s_]/g, '');
-                let found = Object.keys(p).find(o => o.toUpperCase().replace(/[\s_]/g, '') === s);
-                if (found && p[found]) return p[found];
+                let found = Object.keys(p).find(o => o.toUpperCase().replace(/[\s_]/g, '') === k.toUpperCase().replace(/[\s_]/g, ''));
+                if (found && p[found] !== null) return p[found];
             }
             return "SIN INFORMACIÓN";
         }
@@ -120,60 +145,71 @@
                 const d = await r.json();
                 if (d.code === 'Ok') {
                     layer_route.clearLayers();
-                    L.geoJSON(d.routes[0].geometry, { style: { color: '#00ffff', weight: 8, opacity: 0.3 } }).addTo(layer_route);
+                    L.geoJSON(d.routes[0].geometry, { style: { color: '#00ffff', weight: 10, opacity: 0.2 } }).addTo(layer_route);
                     L.geoJSON(d.routes[0].geometry, { style: { color: '#00ffff', weight: 4, opacity: 1 } }).addTo(layer_route);
                     document.getElementById('dist-vial-val').innerText = (d.routes[0].distance / 1000).toFixed(2) + " KM";
                 }
             } catch (e) { document.getElementById('dist-vial-val').innerText = "ERROR RED"; }
         }
 
-        // --- ESCANEO ESPACIAL ---
         function procesar(latlng, fPredio) {
-            var pt = turf.point([latlng.lng, latlng.lat]); 
-            var sideHtml = "";
+            var pt = [latlng.lng, latlng.lat]; var sideHtml = "";
             var minDist = Infinity, targetPET = null;
-            
             layer_PET.eachLayer(l => { var d = map.distance(latlng, l.getLatLng()); if (d < minDist) { minDist = d; targetPET = l.getLatLng(); } });
+            
             sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD VIAL</strong><hr><div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
-            // DETECTAR TODAS LAS ZONAS DE RIESGO SOLAPADAS
-            var zonasEncontradas = [];
-            layer_riesgo.eachLayer(l => {
-                if (turf.booleanPointInPolygon(pt, l.feature)) {
-                    zonasEncontradas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "ZONA SIN NOMBRE").toUpperCase());
-                }
-            });
-
-            if (zonasEncontradas.length > 0) {
-                // PRIORIDAD: Mostrar ALI 2 o similares si hay ALI 1 solapado, según su instrucción previa
-                var zAMostrar = (zonasEncontradas.length > 1) ? zonasEncontradas.filter(z => !z.includes("ALI 1"))[0] || zonasEncontradas[0] : zonasEncontradas[0];
-                sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO DETECTADA:</strong><br>${zAMostrar}</div>`;
+            var zonas = [];
+            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "").toUpperCase()); });
+            if (zonas.length > 0) {
+                var z = (zonas.length > 1) ? zonas.filter(z => !z.includes("ALI 1"))[0] || zonas[0] : zonas[0];
+                sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO:</strong><br>${z}</div>`;
             }
 
             if (fPredio) {
                 var p = fPredio.properties;
                 var nRecRaw = getProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION']);
-                var nRec = (String(nRecRaw).length === 4 && parseInt(nRecRaw) >= 1900) ? "SIN INFORMACIÓN" : nRecRaw;
-                var casas = 0; clusterV.eachLayer(v => { if (turf.booleanPointInPolygon(pt, v.feature)) casas++; });
+                var nRec = (String(nRecRaw).length === 4 && parseInt(nRecRaw) > 1900) ? "SIN INFORMACIÓN" : nRecRaw;
+                var casas = 0; clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], fPredio)) casas++; });
                 
                 sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                     <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${getProp(p, ['ROL'])}</span></div>
                     <div class="data-row"><span class="data-label">ZONA / SECTOR:</span><span class="data-value">${getProp(p, ['ZONA', 'SECTOR'])}</span></div>
-                    <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div>
+                    <div class="data-row"><span class="data-label">VIVIENDAS:</span><span class="data-value">${casas}</span></div>
                     <div class="data-row"><span class="data-label">NÚM. APROBACIÓN:</span><span class="data-value">${getProp(p, ['APROBACION', 'N_APROB'])}</span></div>
                     <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div></div>`;
             }
-            document.getElementById('content-display').innerHTML = sideHtml || "<p style='text-align:center; padding-top:20px'>Punto fuera de áreas de interés.</p>";
+            document.getElementById('content-display').innerHTML = sideHtml;
         }
 
-        map.on('click', e => { 
-            if (e.originalEvent.target.closest('.pet-human-icon')) return;
-            search_marker_layer.clearLayers();
-            var f = null; 
-            layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon(turf.point([e.latlng.lng, e.latlng.lat]), l.feature)) f = l.feature; });
-            procesar(e.latlng, f);
-        });
+        function filtrarRoles() {
+            var val = document.getElementById('rol-search').value.toUpperCase();
+            var sug = document.getElementById('suggestions'); sug.innerHTML = '';
+            if (val.length < 2) { sug.style.display = 'none'; return; }
+            
+            var matches = [];
+            layer_predios.eachLayer(l => { 
+                var r = String(getProp(l.feature.properties, ['ROL'])).toUpperCase();
+                if (r.includes(val) && matches.length < 8) matches.push({r: r, id: L.stamp(l)});
+            });
+
+            if (matches.length > 0) {
+                sug.style.display = 'block';
+                matches.forEach(m => {
+                    var div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `🏠 ROL: ${m.r}`;
+                    div.onclick = () => {
+                        var l = layer_predios.getLayer(m.id); var c = l.getBounds().getCenter();
+                        search_marker_layer.clearLayers();
+                        L.geoJson(l.feature, { style: { color: '#00ffcc', weight: 5, fillOpacity: 0.3 } }).addTo(search_marker_layer);
+                        L.popup().setLatLng(c).setContent(`<b>ROL SELECCIONADO: ${m.r}</b>`).openOn(map);
+                        map.flyTo(c, 17); document.getElementById('rol-search').value = m.r; sug.style.display = 'none';
+                        procesar(c, l.feature);
+                    };
+                    sug.appendChild(div);
+                });
+            }
+        }
 
         function buscarCoordenadas() {
             var val = document.getElementById('coord-input').value;
@@ -184,34 +220,16 @@
             search_marker_layer.clearLayers();
             L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b>UBICACIÓN GPS</b>`).openPopup();
             map.flyTo(latlng, 17);
-            var f = null; layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon(turf.point([lng, lat]), l.feature)) f = l.feature; });
+            var f = null; layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon([lng, lat], l.feature)) f = l.feature; });
             procesar(latlng, f);
         }
 
-        function filtrarRoles() {
-            var val = document.getElementById('rol-search').value.toUpperCase();
-            var sug = document.getElementById('suggestions'); sug.innerHTML = '';
-            if (val.length < 2) { sug.style.display = 'none'; return; }
-            var matches = [];
-            layer_predios.eachLayer(l => { 
-                var r = String(getProp(l.feature.properties, ['ROL'])).toUpperCase();
-                if (r.includes(val) && matches.length < 5) matches.push({r: r, id: L.stamp(l)});
-            });
-            if (matches.length > 0) {
-                sug.style.display = 'block';
-                matches.forEach(m => {
-                    var div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `🏠 ROL: ${m.r}`;
-                    div.onclick = () => {
-                        var l = layer_predios.getLayer(m.id); var c = l.getBounds().getCenter();
-                        search_marker_layer.clearLayers();
-                        L.geoJson(l.feature, { style: { color: '#00ffcc', weight: 4, fillOpacity: 0.3 } }).addTo(search_marker_layer);
-                        map.flyTo(c, 17); document.getElementById('rol-search').value = m.r; sug.style.display = 'none';
-                        procesar(c, l.feature);
-                    };
-                    sug.appendChild(div);
-                });
-            }
-        }
+        map.on('click', e => { 
+            if (e.originalEvent.target.closest('.pet-human-icon')) return;
+            search_marker_layer.clearLayers(); document.getElementById('rol-search').value = "";
+            var f = null; layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon([e.latlng.lng, e.latlng.lat], l.feature)) f = l.feature; });
+            procesar(e.latlng, f);
+        });
 
         function updateStats() {
             var b = map.getBounds(), v = 0, p = 0;
@@ -221,7 +239,7 @@
             document.getElementById('poblacion-count').innerText = v * 3;
             document.getElementById('pet-count').innerText = p;
         }
-        map.on('moveend', updateStats);
+        map.on('moveend', updateStats); updateStats();
         
         L.control.layers({ "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "⛰️ Relieve": gTerrain, "🗺️ OSM": osm }, { "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET, "🔗 Ruta": layer_route }, { collapsed: false }).addTo(map);
         </script>
