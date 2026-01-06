@@ -38,7 +38,8 @@
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; }
             .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
             
-            .leaflet-control-layers-expanded { padding: 12px; background: #fff; border: 2px solid #00ffcc !important; border-radius: 10px; font-weight: bold; }
+            .leaflet-popup-content-wrapper { background: #00283c; color: #fff; border: 2px solid #00ffcc; border-radius: 8px; }
+            .leaflet-popup-tip { background: #00ffcc; }
         </style>
     </head>
     <body>
@@ -76,7 +77,6 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- MAPAS BASE (RESTABLECIDOS) ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
@@ -88,7 +88,6 @@
         var layer_route = L.layerGroup().addTo(map);
         var search_marker_layer = L.layerGroup().addTo(map);
 
-        // ZONAS (COLORES RE-ESTABLECIDOS)
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: f => {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
@@ -101,9 +100,12 @@
         var layer_PET = L.geoJson(json_PET_5, { pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }).bindPopup(`<b style="color:#00ffcc">PUNTO DE ENCUENTRO TRANSITORIO</b><br>${f.properties.descriptio || 'Zona Segura'}`) }).addTo(map);
 
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
-            pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1.5"/></svg>', className: '', iconSize: [22, 22] }) })
+            pointToLayer: (f, latlng) => {
+                var lat = latlng.lat, lng = latlng.lng;
+                if (lat > 0 || lng > -60) { var temp = lat; lat = lng; lng = temp; }
+                return L.marker([lat, lng], { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1.5"/></svg>', className: '', iconSize: [22, 22] }) })
+            }
         });
-        
         var clusterV = L.markerClusterGroup({ 
             maxClusterRadius: 80,
             iconCreateFunction: c => {
@@ -119,7 +121,7 @@
             for (let k of keys) {
                 let s = k.toUpperCase().replace(/[\s_]/g, '');
                 let found = Object.keys(p).find(o => o.toUpperCase().replace(/[\s_]/g, '') === s);
-                if (found && p[found]) return p[found];
+                if (found && p[found] !== null && p[found] !== undefined) return p[found];
             }
             return "SIN INFORMACIÓN";
         }
@@ -144,7 +146,6 @@
             sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD VIAL</strong><hr><div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
-            // LOGICA DE SOLAPAMIENTO CORREGIDA: Mostrar zona que NO sea ALI 1 si hay más de una
             var zonas = [];
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase()); });
             if (zonas.length > 0) {
@@ -175,17 +176,27 @@
             var matches = [];
             layer_predios.eachLayer(l => { 
                 var r = String(getProp(l.feature.properties, ['ROL'])).toUpperCase();
-                if (r.includes(val) && matches.length < 5) matches.push({r: r, id: L.stamp(l)});
+                if (r.includes(val) && matches.length < 8) matches.push({r: r, id: L.stamp(l)});
             });
             if (matches.length > 0) {
                 sug.style.display = 'block';
                 matches.forEach(m => {
                     var div = document.createElement('div'); div.className = 'suggestion-item'; div.innerHTML = `🏠 ROL: ${m.r}`;
                     div.onclick = () => {
-                        var l = layer_predios.getLayer(m.id); var c = l.getBounds().getCenter();
+                        var l = layer_predios.getLayer(m.id); 
+                        var c = l.getBounds().getCenter();
                         search_marker_layer.clearLayers();
+                        
+                        // GENERAR MARCADOR Y POPUP EN EL ROL BUSCADO
                         L.geoJson(l.feature, { style: { color: '#00ffcc', weight: 4, fillOpacity: 0.3 } }).addTo(search_marker_layer);
-                        map.flyTo(c, 17); document.getElementById('rol-search').value = m.r; sug.style.display = 'none';
+                        L.popup({ backgroundColor: '#00283c', color: '#fff' })
+                            .setLatLng(c)
+                            .setContent(`<b style="color:#000">ROL SELECCIONADO: ${m.r}</b>`)
+                            .openOn(map);
+
+                        map.flyTo(c, 17); 
+                        document.getElementById('rol-search').value = m.r; 
+                        sug.style.display = 'none';
                         procesar(c, l.feature);
                     };
                     sug.appendChild(div);
@@ -197,10 +208,10 @@
             var val = document.getElementById('coord-input').value;
             var coords = val.replace(/[^0-9.\- ,]/g, '').split(/[, ]+/);
             var lat = parseFloat(coords[0]), lng = parseFloat(coords[1]);
-            if (isNaN(lat) || isNaN(lng)) return;
+            if (isNaN(lat) || isNaN(lng)) return alert("Formato: Latitud, Longitud");
             var latlng = L.latLng(lat, lng);
             search_marker_layer.clearLayers();
-            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b>PUNTO GPS</b>`).openPopup();
+            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b style="color:#000">PUNTO GPS</b><br>${lat}, ${lng}`).openPopup();
             map.flyTo(latlng, 17);
             var f = null; layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon([lng, lat], l.feature)) f = l.feature; });
             procesar(latlng, f);
@@ -208,7 +219,9 @@
 
         map.on('click', e => { 
             if (e.originalEvent.target.closest('.pet-human-icon')) return;
-            search_marker_layer.clearLayers();
+            search_marker_layer.clearLayers(); 
+            map.closePopup();
+            document.getElementById('rol-search').value = "";
             var f = null; layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon([e.latlng.lng, e.latlng.lat], l.feature)) f = l.feature; });
             procesar(e.latlng, f);
         });
@@ -222,14 +235,12 @@
             document.getElementById('pet-count').innerText = p;
         }
         map.on('moveend', updateStats);
-
-        // --- LEYENDA Y CONTROL DE CAPAS (RESTABLECIDO) ---
+        
         L.control.layers({ 
             "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "⛰️ Relieve": gTerrain, "🗺️ OSM": osm 
         }, { 
             "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET, "🔗 Ruta": layer_route 
         }, { collapsed: false }).addTo(map);
-
         </script>
     </body>
 </html>
