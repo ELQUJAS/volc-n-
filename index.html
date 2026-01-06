@@ -10,9 +10,10 @@
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
         
         <style>
-            html, body { height: 100%; margin: 0; background: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
+            html, body { height: 100%; margin: 0; background: #001a2d; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
             #main-container { display: flex; height: 100%; width: 100%; }
             #map { flex-grow: 1; height: 100%; background: #001a2d; position: relative; }
+            
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; display: flex; flex-direction: column; z-index: 2000; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             #panel-content { flex-grow: 1; overflow-y: auto; padding: 20px; }
             
@@ -23,11 +24,13 @@
             #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); pointer-events: none; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
+            /* POPUPS TÁCTICOS */
             .leaflet-popup-content-wrapper { background: #00283c !important; color: #fff !important; border: 2px solid #00ffcc; border-radius: 8px; }
             .leaflet-popup-tip { background: #00ffcc !important; }
             .pet-popup-title { color: #00ffcc; font-weight: 800; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid rgba(0, 255, 204, 0.3); margin-bottom: 8px; display: block; }
 
-            .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+            /* ESTÉTICA CLUSTERS */
+            .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; }
             .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
 
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
@@ -53,7 +56,7 @@
             <div id="side-panel">
                 <div id="panel-content">
                     <div style="border-bottom:4px solid #00ffcc; padding-bottom:10px; margin-bottom:15px; color:#007bb5; text-transform:uppercase; font-weight:800; font-size:16px; text-align:center;">GESTIÓN RIESGO VILLARRICA</div>
-                    <div id="content-display"><p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.</p></div>
+                    <div id="content-display"><p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa.</p></div>
                 </div>
                 <div id="search-section">
                     <input type="text" id="coord-input" class="search-input" placeholder="Lat, Lng (GPS)">
@@ -76,6 +79,7 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
+        // Capas Base
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
 
@@ -85,40 +89,33 @@
         var layer_route = L.layerGroup().addTo(map);
         var search_marker_layer = L.layerGroup().addTo(map);
 
-        // --- PALETA DE COLORES TÉCNICA EXPANDIDA ---
-        function getRiskColor(d) {
-            d = d ? d.toUpperCase() : "";
-            if (d.includes("ALI 1")) return "#FF0000"; // ROJO PURO
-            if (d.includes("ALI 2")) return "#B22222"; // ROJO OSCURO / LADRILLO
-            if (d.includes("MLI"))   return "#FF8C00"; // NARANJA OSCURO
+        // --- MOTOR DE COLOR BLINDADO ---
+        function getRiskColor(f) {
+            var d = (f.properties.descriptio || f.properties.DESCRIPTIO || f.properties.NAME || "").toUpperCase();
+            if (d.includes("ALI 1")) return "#FF0000"; // ROJO
+            if (d.includes("ALI 2")) return "#B22222"; // ROJO OSCURO
+            if (d.includes("MLI"))   return "#FF8C00"; // NARANJA
             if (d.includes("MI"))    return "#FFD700"; // DORADO
-            if (d.includes("BLI"))   return "#FFFF00"; // AMARILLO BRILLANTE
-            if (d.includes("ZONA SEGURA") || d.includes("BAJO")) return "#90EE90"; // VERDE CLARO
-            return "#CCCCCC"; // GRIS SI NO HAY COINCIDENCIA
+            if (d.includes("BLI"))   return "#FFFF00"; // AMARILLO
+            return "#CCCCCC"; 
         }
 
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
-            style: f => {
-                var desc = (f.properties.descriptio || f.properties.DESCRIPTIO || "").toUpperCase();
-                return { 
-                    stroke: true, 
-                    color: "#fff", 
-                    weight: 0.8, 
-                    fillColor: getRiskColor(desc), 
-                    fillOpacity: 0.5 
-                };
-            },
-            interactive: false 
+            style: f => ({ stroke: true, color: "#fff", weight: 0.8, fillColor: getRiskColor(f), fillOpacity: 0.5 }),
+            interactive: false // Permite que el clic pase al mapa
         }).addTo(map);
 
+        // PET
         var layer_PET = L.geoJson(json_PET_5, { 
-            pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ className: 'pet-human-icon', html: '👥', iconSize: [36, 36] }) }).bindPopup(`<span class="pet-popup-title">Punto de Encuentro</span><div style="font-size:13px">${f.properties.descriptio || "Sin información"}</div>`)
+            pointToLayer: (f, latlng) => L.marker(latlng, { 
+                icon: L.divIcon({ className: 'pet-human-icon', html: '👥', iconSize: [36, 36] }) 
+            }).bindPopup(`<span class="pet-popup-title">Punto de Encuentro</span><div style="font-size:13px">${f.properties.descriptio || "Sin información"}</div>`)
         }).addTo(map);
 
+        // Viviendas y Clusters
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '🏠', className: '', iconSize: [20, 20] }) })
         });
-
         var clusterV = L.markerClusterGroup({ 
             maxClusterRadius: 80,
             iconCreateFunction: c => {
@@ -128,13 +125,17 @@
             }
         }).addLayer(layer_viviendas).addTo(map);
 
-        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0.1 }, interactive: false }).addTo(map);
+        var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { 
+            style: { color: "#fff", weight: 1, fillOpacity: 0.1 },
+            interactive: false 
+        }).addTo(map);
 
+        // --- FUNCIONES CORE ---
         function getProp(p, keys) {
             for (let k of keys) {
                 let s = k.toUpperCase().replace(/[\s_]/g, '');
                 let found = Object.keys(p).find(o => o.toUpperCase().replace(/[\s_]/g, '') === s);
-                if (found && p[found] !== null && p[found] !== undefined && String(p[found]).trim() !== "") return p[found];
+                if (found && p[found] !== null && String(p[found]).trim() !== "") return p[found];
             }
             return "Sin información";
         }
@@ -149,43 +150,45 @@
                     L.geoJSON(d.routes[0].geometry, { style: { color: '#00ffff', weight: 4, opacity: 1 } }).addTo(layer_route);
                     document.getElementById('dist-vial-val').innerText = (d.routes[0].distance / 1000).toFixed(2) + " KM";
                 }
-            } catch (e) { document.getElementById('dist-vial-val').innerText = "ERROR RED"; }
+            } catch (e) { document.getElementById('dist-vial-val').innerText = "Error conexión"; }
         }
 
         function procesar(latlng, fPredio) {
             var pt = turf.point([latlng.lng, latlng.lat]); 
             var sideHtml = "";
             
+            // Ruta
             var minDist = Infinity, targetPET = null;
             layer_PET.eachLayer(l => { var d = map.distance(latlng, l.getLatLng()); if (d < minDist) { minDist = d; targetPET = l.getLatLng(); } });
-            sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA AL PET CERCANO</strong><hr><div class="data-row"><span class="data-label">DISTANCIA VIAL ESTIMADA:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
+            sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA AL PET MÁS CERCANO</strong><hr><div class="data-row"><span class="data-label">DISTANCIA VIAL ESTIMADA:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
+            // Zonas
             var zonas = [];
-            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "").toUpperCase()); });
+            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "ZONA").toUpperCase()); });
             if (zonas.length > 0) {
                 var z = (zonas.length > 1) ? zonas.filter(z => !z.includes("ALI 1"))[0] || zonas[0] : zonas[0];
                 sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO DETECTADA:</strong><br>${z}</div>`;
             }
 
+            // Ficha
             if (fPredio) {
                 var p = fPredio.properties;
-                var casasEnPredio = 0;
+                var casasPredio = 0;
                 layer_viviendas.eachLayer(v => {
-                    var vPt = turf.point([v.getLatLng().lng, v.getLatLng().lat]);
-                    if (turf.booleanPointInPolygon(vPt, fPredio)) casasEnPredio++;
+                    if (turf.booleanPointInPolygon(turf.point([v.getLatLng().lng, v.getLatLng().lat]), fPredio)) casasPredio++;
                 });
                 
                 sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                     <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${getProp(p, ['ROL'])}</span></div>
-                    <div class="data-row"><span class="data-label">ZONA / SECTOR:</span><span class="data-value">${getProp(p, ['ZONA', 'SECTOR'])}</span></div>
-                    <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casasEnPredio}</span></div>
+                    <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casasPredio}</span></div>
                     <div class="data-row"><span class="data-label">NÚM. APROBACIÓN:</span><span class="data-value">${getProp(p, ['APROBACION', 'N_APROB'])}</span></div>
                     <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${getProp(p, ['NUMERO_REC', 'NUM_REC'])}</span></div></div>`;
             }
-            document.getElementById('content-display').innerHTML = sideHtml || "<p style='text-align:center; padding-top:20px'>Sin datos en este punto.</p>";
+            document.getElementById('content-display').innerHTML = sideHtml;
         }
 
+        // Clic Global
         map.on('click', e => {
             if (e.originalEvent.target.closest('.pet-human-icon')) return;
             search_marker_layer.clearLayers();
@@ -195,6 +198,7 @@
             procesar(e.latlng, predioDetectado);
         });
 
+        // Búsquedas
         function buscarCoordenadas() {
             var val = document.getElementById('coord-input').value;
             var c = val.split(/[, ]+/);
@@ -202,12 +206,11 @@
             if (isNaN(lat) || isNaN(lng)) return;
             var latlng = L.latLng(lat, lng);
             search_marker_layer.clearLayers();
-            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b>GPS: ${lat}, ${lng}</b>`).openPopup();
+            L.marker(latlng).addTo(search_marker_layer).bindPopup("Ubicación GPS").openPopup();
             map.flyTo(latlng, 17);
-            var pt = turf.point([lng, lat]);
-            var predioDetectado = null;
-            layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) predioDetectado = l.feature; });
-            procesar(latlng, predioDetectado);
+            var f = null;
+            layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon(turf.point([lng, lat]), l.feature)) f = l.feature; });
+            procesar(latlng, f);
         }
 
         function filtrarRoles() {
@@ -227,7 +230,7 @@
                         var l = layer_predios.getLayer(m.id); var c = l.getBounds().getCenter();
                         search_marker_layer.clearLayers();
                         L.geoJson(l.feature, { style: { color: '#00ffcc', weight: 4, fillOpacity: 0.3 } }).addTo(search_marker_layer);
-                        map.flyTo(c, 17); document.getElementById('rol-search').value = m.r; sug.style.display = 'none';
+                        map.flyTo(c, 17); sug.style.display = 'none';
                         procesar(c, l.feature);
                     };
                     sug.appendChild(div);
