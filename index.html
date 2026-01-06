@@ -10,7 +10,7 @@
         <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.Default.css" />
         
         <style>
-            html, body { height: 100%; margin: 0; background: #fff; font-family: 'Segoe UI', sans-serif; overflow: hidden; }
+            html, body { height: 100%; margin: 0; background: #fff; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
             #main-container { display: flex; height: 100%; width: 100%; }
             #map { flex-grow: 1; height: 100%; background: #001a2d; position: relative; }
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; display: flex; flex-direction: column; z-index: 2000; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
@@ -76,7 +76,6 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // --- MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
@@ -88,61 +87,29 @@
         var layer_route = L.layerGroup().addTo(map);
         var search_marker_layer = L.layerGroup().addTo(map);
 
-        // --- FUNCIÓN DE ESTILO DE RIESGO (ESTABILIZADA) ---
-        function getRiskColor(feature) {
-            var props = feature.properties;
-            // Busca en descriptio, DESCRIPTIO o NAME de forma insensible a mayúsculas
-            var d = (props.descriptio || props.DESCRIPTIO || props.name || props.NAME || "").toUpperCase().trim();
-            
-            if (d.includes("ALI 1")) return "#FF0000"; // ROJO
-            if (d.includes("ALI 2")) return "#CD853F"; // BRONCE/MARRON
-            if (d.includes("MLI"))   return "#FFAE00"; // NARANJA
-            if (d.includes("MI"))    return "#B8860B"; // DORADO
-            if (d.includes("BLI"))   return "#FFFF00"; // AMARILLO
-            return "#BDBDBD"; // GRIS (Default)
-        }
-
+        // --- COLORES ZONAS ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
-            style: function(f) {
-                return { 
-                    stroke: true, 
-                    color: "#fff", 
-                    weight: 0.8, 
-                    fillColor: getRiskColor(f), 
-                    fillOpacity: 0.5 
-                };
+            style: f => {
+                var d = (f.properties.descriptio || f.properties.DESCRIPTIO || "").toUpperCase();
+                var col = d.includes("ALI 1") ? "#FF0000" : d.includes("ALI 2") ? "#CD853F" : d.includes("MLI") ? "#FFAE00" : d.includes("MI") ? "#B8860B" : "#FFFF00";
+                return { stroke: true, color: "#fff", weight: 0.5, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
         var petIcon = L.divIcon({ className: '', html: '<div class="pet-human-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="#00283c"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>', iconSize: [36, 36], iconAnchor: [18, 18] });
         var layer_PET = L.geoJson(json_PET_5, { pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }).bindPopup(`<b style="color:#00ffcc">PUNTO DE ENCUENTRO TRANSITORIO</b><br>${f.properties.descriptio || 'Zona Segura'}`) }).addTo(map);
 
-        // Icono de casa 🏠
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
-            pointToLayer: (f, latlng) => {
-                var lat = latlng.lat, lng = latlng.lng;
-                if (lat > 0 || lng > -60) { var temp = lat; lat = lng; lng = temp; }
-                return L.marker([lat, lng], { icon: L.divIcon({ html: '🏠', className: '', iconSize: [20, 20] }) })
-            }
+            pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '🏠', className: '', iconSize: [20, 20] }) })
         });
-        
-        var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 80,
-            iconCreateFunction: c => {
-                var count = c.getChildCount();
-                var cls = count < 20 ? 'c-low' : count < 100 ? 'c-med' : 'c-high';
-                return L.divIcon({ html: `<div>${count}</div>`, className: `cluster-dynamic ${cls}`, iconSize: [40, 40] });
-            }
-        }).addLayer(layer_viviendas).addTo(map);
-
+        var clusterV = L.markerClusterGroup({ maxClusterRadius: 80 }).addLayer(layer_viviendas).addTo(map);
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0.1 } }).addTo(map);
 
-        // --- LÓGICA DE PROCESAMIENTO ---
         function getProp(p, keys) {
             for (let k of keys) {
                 let s = k.toUpperCase().replace(/[\s_]/g, '');
                 let found = Object.keys(p).find(o => o.toUpperCase().replace(/[\s_]/g, '') === s);
-                if (found && p[found] !== null) return p[found];
+                if (found && p[found]) return p[found];
             }
             return "SIN INFORMACIÓN";
         }
@@ -160,6 +127,7 @@
             } catch (e) { document.getElementById('dist-vial-val').innerText = "ERROR RED"; }
         }
 
+        // --- ESCANEO ESPACIAL ---
         function procesar(latlng, fPredio) {
             var pt = turf.point([latlng.lng, latlng.lat]); 
             var sideHtml = "";
@@ -169,11 +137,18 @@
             sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD VIAL</strong><hr><div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
-            var zonas = [];
-            layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "").toUpperCase()); });
-            if (zonas.length > 0) {
-                var zAMostrar = (zonas.length > 1) ? zonas.filter(z => !z.includes("ALI 1"))[0] || zonas[0] : zonas[0];
-                sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO:</strong><br>${zAMostrar}</div>`;
+            // DETECTAR TODAS LAS ZONAS DE RIESGO SOLAPADAS
+            var zonasEncontradas = [];
+            layer_riesgo.eachLayer(l => {
+                if (turf.booleanPointInPolygon(pt, l.feature)) {
+                    zonasEncontradas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "ZONA SIN NOMBRE").toUpperCase());
+                }
+            });
+
+            if (zonasEncontradas.length > 0) {
+                // PRIORIDAD: Mostrar ALI 2 o similares si hay ALI 1 solapado, según su instrucción previa
+                var zAMostrar = (zonasEncontradas.length > 1) ? zonasEncontradas.filter(z => !z.includes("ALI 1"))[0] || zonasEncontradas[0] : zonasEncontradas[0];
+                sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO DETECTADA:</strong><br>${zAMostrar}</div>`;
             }
 
             if (fPredio) {
@@ -189,7 +164,7 @@
                     <div class="data-row"><span class="data-label">NÚM. APROBACIÓN:</span><span class="data-value">${getProp(p, ['APROBACION', 'N_APROB'])}</span></div>
                     <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div></div>`;
             }
-            document.getElementById('content-display').innerHTML = sideHtml;
+            document.getElementById('content-display').innerHTML = sideHtml || "<p style='text-align:center; padding-top:20px'>Punto fuera de áreas de interés.</p>";
         }
 
         map.on('click', e => { 
