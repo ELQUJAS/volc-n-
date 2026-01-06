@@ -14,56 +14,31 @@
             #main-container { display: flex; height: 100%; width: 100%; }
             #map { flex-grow: 1; height: 100%; background: #e0e0e0; position: relative; }
             
-            /* PANEL LATERAL CON BUSCADOR FIJO */
-            #side-panel { 
-                width: 380px; background: #ffffff; border-left: 1px solid #ccc; 
-                display: flex; flex-direction: column; z-index: 2000; box-shadow: -2px 0 5px rgba(0,0,0,0.1); 
-            }
+            #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; display: flex; flex-direction: column; z-index: 2000; }
             #panel-content { flex-grow: 1; overflow-y: auto; padding: 20px; }
             
-            /* BUSCADOR FIJO AL FINAL */
-            #search-section { 
-                padding: 15px; background: #00283c; border-top: 4px solid #00ffcc; 
-                position: relative; z-index: 3000;
-            }
+            /* BUSCADOR FIJO */
+            #search-section { padding: 15px; background: #00283c; border-top: 4px solid #00ffcc; z-index: 3000; }
             .search-box { position: relative; }
-            .search-input { 
-                width: 100%; padding: 12px; border: none; border-radius: 4px; 
-                font-weight: bold; font-size: 14px; outline: none;
-            }
-            .suggestions-list {
-                position: absolute; bottom: 100%; left: 0; width: 100%;
-                background: white; border: 1px solid #ccc; max-height: 200px;
-                overflow-y: auto; display: none; margin-bottom: 5px; border-radius: 4px;
-                box-shadow: 0 -4px 10px rgba(0,0,0,0.2);
-            }
-            .suggestion-item { 
-                padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; font-size: 13px;
-            }
-            .suggestion-item:hover { background: #00ffcc; color: #000; }
+            .search-input { width: 100%; padding: 12px; border: none; border-radius: 4px; font-weight: bold; }
+            .suggestions-list { position: absolute; bottom: 100%; left: 0; width: 100%; background: white; max-height: 200px; overflow-y: auto; display: none; border-radius: 4px; box-shadow: 0 -4px 10px rgba(0,0,0,0.3); }
+            .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; }
+            .suggestion-item:hover { background: #00ffcc; }
 
-            .panel-header { border-bottom: 4px solid #00ffcc; padding-bottom: 10px; margin-bottom: 15px; color: #007bb5; text-transform: uppercase; font-weight: 800; font-size: 16px; text-align: center; }
-            
             /* ESTADÍSTICAS */
-            #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); min-width: 220px; pointer-events: none; }
-            .stat-item { margin-bottom: 8px; border-bottom: 1px solid rgba(0,255,204,0.2); padding-bottom: 4px; }
-            .stat-label { font-size: 9px; text-transform: uppercase; display: block; color: #fff; opacity: 0.8; }
+            #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; pointer-events: none; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
             /* FICHAS */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
-            .riesgo-box { border-left-color: #d32f2f; background: #fffbfb; }
-            .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
+            .riesgo-box { border-left-color: #d32f2f; }
+            .predio-box { border-left-color: #007d7d; }
             .evac-box { border-left-color: #00ffcc; background: #00283c; color: #fff; }
-            .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
+            .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
-            .data-value { color: #000; font-weight: bold; font-size: 11px; }
 
-            /* POPUP PET */
-            .leaflet-popup-content-wrapper { background: #00283c; color: #fff; border: 2px solid #00ffcc; }
-            .popup-pet-title { color: #00ffcc; font-weight: 800; display: block; margin-bottom: 5px; }
-
-            .pet-glow-icon { width: 32px; height: 32px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
+            /* ICONOS */
+            .pet-glow-icon { width: 32px; height: 32px; background: #00ffcc; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px #00ffcc; animation: pet-pulse 1.5s infinite; }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; }
             .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
@@ -73,9 +48,9 @@
         <div id="main-container">
             <div id="map">
                 <div id="stats-overlay">
-                    <div class="stat-item"><span class="stat-label">Viviendas en Vista</span><span id="viviendas-count" class="stat-value">0</span></div>
-                    <div class="stat-item"><span class="stat-label">Población (f:3)</span><span id="poblacion-count" class="stat-value">0</span></div>
-                    <div class="stat-item" style="border:none;"><span class="stat-label">PETs Disponibles</span><span id="pet-count" class="stat-value">0</span></div>
+                    <div style="margin-bottom:8px"><span style="font-size:9px">VIVIENDAS</span><br><span id="viviendas-count" class="stat-value">0</span></div>
+                    <div style="margin-bottom:8px"><span style="font-size:9px">POBLACIÓN (f:3)</span><br><span id="poblacion-count" class="stat-value">0</span></div>
+                    <div><span style="font-size:9px">PETs</span><br><span id="pet-count" class="stat-value">0</span></div>
                 </div>
             </div>
             
@@ -83,14 +58,14 @@
                 <div id="panel-content">
                     <div class="panel-header">GESTIÓN RIESGO VILLARRICA</div>
                     <div id="content-display">
-                        <p style="text-align:center; color:#999; margin-top:80px;">Haga clic en el mapa o busque un ROL.</p>
+                        <p style="text-align:center; color:#999; margin-top:80px;">Seleccione un predio o busque un ROL.</p>
                     </div>
                 </div>
                 
                 <div id="search-section">
                     <div class="search-box">
                         <div id="suggestions" class="suggestions-list"></div>
-                        <input type="text" id="rol-search" class="search-input" placeholder="BUSCAR ROL (ej: 125-4)..." oninput="filtrarRoles()">
+                        <input type="text" id="rol-search" class="search-input" placeholder="BUSCAR ROL..." oninput="filtrarRoles()">
                     </div>
                 </div>
             </div>
@@ -107,35 +82,30 @@
 
         <script>
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
-        var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
-        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
-
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
-        L.control.zoom({ position: 'bottomleft' }).addTo(map);
-
+        
         var layer_route = L.layerGroup().addTo(map);
-        var highlight_predio = L.layerGroup().addTo(map);
+        var search_marker_layer = L.layerGroup().addTo(map); // CAPA PARA SÍMBOLO DE BÚSQUEDA
 
-        // --- ZONAS ---
+        // ZONAS
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
-            style: function(f) {
+            style: f => {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
-                var col = d.includes("ALI 1") ? "#ff0000" : d.includes("ALI 2") ? "#cd853f" : d.includes("MLI") ? "#ffae00" : "#bdbdbd";
+                var col = d.includes("ALI 1") ? "#ff0000" : d.includes("ALI 2") ? "#cd853f" : "#ffae00";
                 return { stroke: true, color: "#fff", weight: 0.5, fillColor: col, fillOpacity: 0.5 };
             }
         }).addTo(map);
 
-        // --- PET POPUPS ---
-        var petIcon = L.divIcon({ className: '', html: '<div class="pet-glow-icon">🛡️</div>', iconSize: [32, 32], iconAnchor: [16, 16] });
+        // PET
         var layer_PET = L.geoJson(json_PET_5, { 
             pointToLayer: (f, latlng) => {
-                var m = L.marker(latlng, { icon: petIcon });
-                m.bindPopup(`<span class="popup-pet-title">PUNTO DE SEGURIDAD</span>${f.properties.descriptio || f.properties.Nombre || 'PET'}`);
+                var m = L.marker(latlng, { icon: L.divIcon({ className: '', html: '<div class="pet-glow-icon">🛡️</div>', iconSize: [32, 32], iconAnchor: [16, 16] }) });
+                m.bindPopup(`<strong>PET:</strong> ${f.properties.descriptio || 'ZONA SEGURA'}`);
                 return m;
             }
         }).addTo(map);
 
-        // --- VIVIENDAS ---
+        // VIVIENDAS
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => {
                 var lat = latlng.lat, lng = latlng.lng;
@@ -143,29 +113,26 @@
                 return L.marker([lat, lng], { icon: L.divIcon({ html: '🏠', className: '', iconSize: [22, 22] }) });
             }
         });
-
-        var clusterV = L.markerClusterGroup({ 
-            maxClusterRadius: 80,
-            iconCreateFunction: c => {
-                var count = c.getChildCount();
-                var cls = count < 20 ? 'c-low' : count < 100 ? 'c-med' : 'c-high';
-                return L.divIcon({ html: `<div>${count}</div>`, className: `cluster-dynamic ${cls}`, iconSize: [40, 40] });
-            }
-        }).addLayer(layer_viviendas).addTo(map);
+        var clusterV = L.markerClusterGroup({ maxClusterRadius: 80 }).addLayer(layer_viviendas).addTo(map);
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0 } }).addTo(map);
 
-        // --- MOTOR BUSCADOR DE ROLES ---
+        // --- MOTOR DE BÚSQUEDA ---
         function filtrarRoles() {
             var val = document.getElementById('rol-search').value.toUpperCase();
             var sugBox = document.getElementById('suggestions');
             sugBox.innerHTML = '';
+            
+            if (val.length === 0) { 
+                limpiarBusqueda(); 
+                return; 
+            }
             if (val.length < 2) { sugBox.style.display = 'none'; return; }
 
             var matches = [];
             layer_predios.eachLayer(l => {
                 var rol = String(l.feature.properties.ROL || "").toUpperCase();
-                if (rol.includes(val) && matches.length < 10) matches.push({rol: rol, id: L.stamp(l)});
+                if (rol.includes(val) && matches.length < 8) matches.push({rol: rol, id: L.stamp(l)});
             });
 
             if (matches.length > 0) {
@@ -183,18 +150,29 @@
         function seleccionarRol(leafletId) {
             var layer = layer_predios.getLayer(leafletId);
             var center = layer.getBounds().getCenter();
+            var rolStr = layer.feature.properties.ROL;
+
+            search_marker_layer.clearLayers();
+            
+            // RESALTE Y POPUP AUTOMÁTICO
+            L.geoJson(layer.feature, { style: { color: '#00ffcc', weight: 5, fillOpacity: 0.3 } }).addTo(search_marker_layer);
+            
+            var marker = L.circleMarker(center, { radius: 1, color: 'transparent' }).addTo(search_marker_layer);
+            marker.bindPopup(`<b>UBICACIÓN ROL: ${rolStr}</b>`, { closeButton: false }).openPopup();
+
             map.flyTo(center, 17);
-            
-            highlight_predio.clearLayers();
-            L.geoJson(layer.feature, { style: { color: '#00ffcc', weight: 4, fillOpacity: 0.2 } }).addTo(highlight_predio);
-            
             document.getElementById('suggestions').style.display = 'none';
-            document.getElementById('rol-search').value = layer.feature.properties.ROL;
+            document.getElementById('rol-search').value = rolStr;
             
             procesarInformacion(center, layer.feature);
         }
 
-        // --- LÓGICA DE PROCESAMIENTO ---
+        function limpiarBusqueda() {
+            search_marker_layer.clearLayers();
+            document.getElementById('suggestions').style.display = 'none';
+        }
+
+        // --- PROCESAMIENTO ---
         async function calcularRutaVial(start, end) {
             try {
                 const response = await fetch(`https://router.project-osrm.org/route/v1/driving/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson`);
@@ -210,8 +188,8 @@
         function procesarInformacion(latlng, featurePredio) {
             var pt = [latlng.lng, latlng.lat];
             var sideHtml = "";
-
             var minDist = Infinity, targetPET = null;
+
             layer_PET.eachLayer(l => {
                 var d = map.distance(latlng, l.getLatLng());
                 if (d < minDist) { minDist = d; targetPET = l.getLatLng(); }
@@ -232,15 +210,14 @@
                 clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], featurePredio)) casas++; });
                 sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                     <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${p.ROL || "N/A"}</span></div>
-                    <div class="data-row"><span class="data-label">NUM. APROBACIÓN:</span><span class="data-value">${p.APROBACION || p.N_APROB || 'SIN DATO'}</span></div>
                     <div class="data-row"><span class="data-label">VIVIENDAS:</span><span class="data-value">${casas}</span></div></div>`;
             }
             document.getElementById('content-display').innerHTML = sideHtml;
         }
 
         map.on('click', e => {
-            if (e.originalEvent.target.classList.contains('pet-glow-icon')) return;
-            highlight_predio.clearLayers();
+            limpiarBusqueda();
+            document.getElementById('rol-search').value = "";
             var predioTocado = null;
             layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon([e.latlng.lng, e.latlng.lat], l.feature)) predioTocado = l.feature; });
             procesarInformacion(e.latlng, predioTocado);
@@ -255,7 +232,6 @@
             document.getElementById('pet-count').innerText = p;
         }
         map.on('moveend', updateStats);
-        L.control.layers({ "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "🗺️ OSM": osm }, { "🌋 Zonas": layer_riesgo, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET }, { collapsed: false }).addTo(map);
         </script>
     </body>
 </html>
