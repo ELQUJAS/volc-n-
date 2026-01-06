@@ -35,7 +35,6 @@
             .pet-human-icon { width: 36px; height: 36px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
             
-            /* CLUSTERS RESTAURADOS */
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; }
             .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
             
@@ -77,13 +76,19 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
+        // --- MAPAS BASE (RESTABLECIDOS) ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
+        var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
+        var osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 });
+
         var map = L.map('map', { zoomControl: false, layers: [gHybrid] }).fitBounds([[-39.40, -72.29], [-39.26, -72.00]]);
+        L.control.zoom({ position: 'bottomleft' }).addTo(map);
         
         var layer_route = L.layerGroup().addTo(map);
         var search_marker_layer = L.layerGroup().addTo(map);
 
+        // ZONAS (COLORES RE-ESTABLECIDOS)
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: f => {
                 var d = String(f.properties['descriptio'] || "").toUpperCase();
@@ -139,16 +144,18 @@
             sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD VIAL</strong><hr><div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
+            // LOGICA DE SOLAPAMIENTO CORREGIDA: Mostrar zona que NO sea ALI 1 si hay más de una
             var zonas = [];
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase()); });
-            if (zonas.length > 0) { sideHtml += `<div class="info-card riesgo-box"><strong>🌋 RIESGOS DETECTADOS:</strong><br>${zonas.join(" / ")}</div>`; }
+            if (zonas.length > 0) {
+                var zonaAMostrar = (zonas.length > 1) ? zonas.filter(z => !z.includes("ALI 1"))[0] || zonas[0] : zonas[0];
+                sideHtml += `<div class="info-card riesgo-box"><strong>🌋 ZONA DE RIESGO:</strong><br>${zonaAMostrar}</div>`;
+            }
 
             if (fPredio) {
                 var p = fPredio.properties;
                 var nRecRaw = getProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION']);
-                var nRec = nRecRaw;
-                if (!isNaN(parseInt(nRecRaw)) && String(nRecRaw).length === 4 && parseInt(nRecRaw) >= 1900 && parseInt(nRecRaw) <= 2026) nRec = "SIN INFORMACIÓN";
-                
+                var nRec = (!isNaN(parseInt(nRecRaw)) && String(nRecRaw).length === 4) ? "SIN INFORMACIÓN" : nRecRaw;
                 var casas = 0; clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], fPredio)) casas++; });
                 
                 sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
@@ -215,7 +222,14 @@
             document.getElementById('pet-count').innerText = p;
         }
         map.on('moveend', updateStats);
-        L.control.layers({ "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat }, { "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET, "🔗 Ruta": layer_route }, { collapsed: false }).addTo(map);
+
+        // --- LEYENDA Y CONTROL DE CAPAS (RESTABLECIDO) ---
+        L.control.layers({ 
+            "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "⛰️ Relieve": gTerrain, "🗺️ OSM": osm 
+        }, { 
+            "🌋 Zonas": layer_riesgo, "📏 Predios": layer_predios, "🏠 Viviendas": clusterV, "🟢 PET": layer_PET, "🔗 Ruta": layer_route 
+        }, { collapsed: false }).addTo(map);
+
         </script>
     </body>
 </html>
