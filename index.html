@@ -17,6 +17,7 @@
             #side-panel { width: 380px; background: #ffffff; border-left: 1px solid #ccc; display: flex; flex-direction: column; z-index: 2000; box-shadow: -2px 0 5px rgba(0,0,0,0.1); }
             #panel-content { flex-grow: 1; overflow-y: auto; padding: 20px; }
             
+            /* BUSCADOR DESBLOQUEADO */
             #search-section { padding: 15px; background: #00283c; border-top: 4px solid #00ffcc; z-index: 3000; position: relative; }
             .search-group { margin-bottom: 12px; position: relative; }
             .search-label { color: #00ffcc; font-size: 9px; font-weight: 800; display: block; margin-bottom: 5px; text-transform: uppercase; }
@@ -27,9 +28,11 @@
             .suggestion-item { padding: 12px; cursor: pointer; border-bottom: 1px solid #eee; color: #333; font-size: 13px; font-weight: 600; }
             .suggestion-item:hover { background: #00ffcc; color: #00283c; }
 
+            /* ESTADÍSTICAS */
             #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); pointer-events: none; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
+            /* FICHAS */
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #ff0000; background: #fffbfb; }
             .predio-box { border-left-color: #007d7d; background: #f0fdfd; }
@@ -38,11 +41,12 @@
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
 
+            /* ICONOS */
             .pet-human-icon { width: 36px; height: 36px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px #00ffcc; animation: pet-pulse 1.5s infinite; }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
             
-            /* Corrección estética de viviendas y clusters */
             .vivienda-icon-style { font-size: 18px; text-shadow: 1px 1px 2px #000; color: white; display: flex; align-items: center; justify-content: center; }
+            
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; }
             .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
 
@@ -67,7 +71,7 @@
                     <div class="search-group">
                         <span class="search-label">📍 GPS (Lat, Lng)</span>
                         <input type="text" id="coord-input" class="search-input" placeholder="-39.29, -72.20">
-                        <button class="coord-btn" style="width:100%; padding:8px; background:#00ffcc; border:none; border-radius:4px; font-weight:800; cursor:pointer; color:#00283c;" onclick="buscarCoordenadas()">IR A POSICIÓN</button>
+                        <button class="coord-btn" style="width:100%; padding:8px; background:#00ffcc; border:none; border-radius:4px; font-weight:800; cursor:pointer;" onclick="buscarCoordenadas()">IR A POSICIÓN</button>
                     </div>
                     <div class="search-group" style="margin-bottom:0">
                         <span class="search-label">🏠 BUSCADOR DE ROLES</span>
@@ -88,7 +92,7 @@
         <script src="data/construccionesrurales__6.js"></script>
 
         <script>
-        // Capas Base
+        // --- MAPAS BASE ---
         var gHybrid = L.tileLayer('https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gSat = L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 22 });
         var gTerrain = L.tileLayer('https://mt1.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', { maxZoom: 22 });
@@ -100,7 +104,7 @@
         var layer_route = L.layerGroup().addTo(map);
         var search_marker_layer = L.layerGroup().addTo(map);
 
-        // Zonas con Colores Técnicos Blindados
+        // --- ZONAS CON COLORES REESTABLECIDOS ---
         var layer_riesgo = L.geoJson(json_riesgo_volcan_zonas_3, {
             style: function(f) {
                 var d = (f.properties.descriptio || f.properties.DESCRIPTIO || f.properties.NAME || "").toUpperCase();
@@ -114,11 +118,11 @@
             }
         }).addTo(map);
 
-        // PET Icono Personas
+        // --- PET ICONO PERSONAS ---
         var petIcon = L.divIcon({ className: '', html: '<div class="pet-human-icon"><svg viewBox="0 0 24 24" width="22" height="22" fill="#00283c"><path d="M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z"/></svg></div>', iconSize: [36, 36], iconAnchor: [18, 18] });
         var layer_PET = L.geoJson(json_PET_5, { pointToLayer: (f, latlng) => L.marker(latlng, { icon: petIcon }).bindPopup(`<b style="color:#00ffcc">PUNTO DE ENCUENTRO TRANSITORIO</b><br>${f.properties.descriptio || 'Zona Segura'}`) }).addTo(map);
 
-        // Viviendas con icono real 🏠
+        // --- VIVIENDAS CON ICONO CASA 🏠 ---
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => {
                 var lat = latlng.lat, lng = latlng.lng;
@@ -138,7 +142,7 @@
 
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0.1 } }).addTo(map);
 
-        // Funciones de Propiedades
+        // --- UTILIDADES ---
         function getProp(p, keys) {
             for (let k of keys) {
                 let found = Object.keys(p).find(o => o.toUpperCase().replace(/[\s_]/g, '') === k.toUpperCase().replace(/[\s_]/g, ''));
@@ -153,6 +157,7 @@
                 const d = await r.json();
                 if (d.code === 'Ok') {
                     layer_route.clearLayers();
+                    // Efecto Neón Glow Estético
                     L.geoJSON(d.routes[0].geometry, { style: { color: '#00ffff', weight: 10, opacity: 0.2, lineCap: 'round' } }).addTo(layer_route);
                     L.geoJSON(d.routes[0].geometry, { style: { color: '#00ffff', weight: 4, opacity: 1, lineCap: 'round' } }).addTo(layer_route);
                     document.getElementById('dist-vial-val').innerText = (d.routes[0].distance / 1000).toFixed(2) + " KM";
@@ -168,7 +173,7 @@
             sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD VIAL</strong><hr><div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
-            // Zonas con solapamiento corregido (Spatial Query)
+            // ZONAS CON SOLAPAMIENTO CORREGIDO
             var zonas = [];
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) {
                 zonas.push((l.feature.properties.descriptio || l.feature.properties.DESCRIPTIO || "").toUpperCase());
@@ -194,7 +199,7 @@
             document.getElementById('content-display').innerHTML = sideHtml;
         }
 
-        // Búsquedas
+        // --- BUSCADORES ---
         function filtrarRoles() {
             var val = document.getElementById('rol-search').value.toUpperCase();
             var sug = document.getElementById('suggestions'); sug.innerHTML = '';
@@ -228,7 +233,7 @@
             if (isNaN(lat) || isNaN(lng)) return;
             var latlng = L.latLng(lat, lng);
             search_marker_layer.clearLayers();
-            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b style="color:#000">UBICACIÓN GPS</b>`).openPopup();
+            L.marker(latlng).addTo(search_marker_layer).bindPopup(`<b style="color:#000">COORDENADAS GPS</b>`).openPopup();
             map.flyTo(latlng, 17);
             var f = null; layer_predios.eachLayer(l => { if (turf.booleanPointInPolygon(turf.point([lng, lat]), l.feature)) f = l.feature; });
             procesar(latlng, f);
@@ -250,7 +255,7 @@
             document.getElementById('poblacion-count').innerText = v * 3;
             document.getElementById('pet-count').innerText = p;
         }
-        map.on('moveend', updateStats); updateStats();
+        map.on('moveend', updateStats);
         
         L.control.layers({ 
             "🌐 Híbrido": gHybrid, "🛰️ Satélite": gSat, "⛰️ Relieve": gTerrain, "🗺️ OSM": osm 
