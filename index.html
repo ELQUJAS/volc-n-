@@ -20,7 +20,7 @@
             .search-input { width: 100%; padding: 10px; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; outline: none; margin-bottom: 5px; box-sizing: border-box; }
             .coord-btn { width: 100%; padding: 8px; background: #00ffcc; color: #00283c; border: none; border-radius: 4px; font-weight: 900; cursor: pointer; text-transform: uppercase; font-size: 11px; }
             
-            #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; pointer-events: none; }
+            #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); pointer-events: none; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
@@ -31,10 +31,11 @@
             .data-row { font-size: 11px; margin: 8px 0; display: flex; flex-direction: column; border-bottom: 1px solid #f0f0f0; padding-bottom: 4px; }
             .data-label { text-transform: uppercase; font-weight: 800; color: #555; font-size: 9px; }
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
-            .evac-box .data-value { color: #fff; }
 
-            .pet-human-icon { width: 36px; height: 36px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
+            .pet-human-icon { width: 36px; height: 36px; background: #00ffcc; border: 2.5px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); animation: pet-pulse 1.5s infinite; }
             @keyframes pet-pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+            
+            /* CLUSTERS RESTAURADOS */
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; }
             .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
             
@@ -97,7 +98,16 @@
         var layer_viviendas = L.geoJson(json_construccionesrurales__6, {
             pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '<svg viewBox="0 0 24 24" width="22" height="22"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" fill="white" stroke="black" stroke-width="1.5"/></svg>', className: '', iconSize: [22, 22] }) })
         });
-        var clusterV = L.markerClusterGroup({ maxClusterRadius: 80 }).addLayer(layer_viviendas).addTo(map);
+        
+        var clusterV = L.markerClusterGroup({ 
+            maxClusterRadius: 80,
+            iconCreateFunction: c => {
+                var count = c.getChildCount();
+                var cls = count < 20 ? 'c-low' : count < 100 ? 'c-med' : 'c-high';
+                return L.divIcon({ html: `<div>${count}</div>`, className: `cluster-dynamic ${cls}`, iconSize: [40, 40] });
+            }
+        }).addLayer(layer_viviendas).addTo(map);
+
         var layer_predios = L.geoJson(json_subdivisionesriesgovolcanico_4, { style: { color: "#fff", weight: 1, fillOpacity: 0.1 } }).addTo(map);
 
         function getProp(p, keys) {
@@ -129,21 +139,24 @@
             sideHtml += `<div class="info-card evac-box"><strong>🛣️ RUTA DE SEGURIDAD VIAL</strong><hr><div class="data-row"><span class="data-label">DISTANCIA AL PET CERCANO:</span><span id="dist-vial-val" class="data-value">Calculando...</span></div></div>`;
             if (targetPET) calcRuta(latlng, targetPET);
 
-            // DETECCIÓN MULTI-ZONA (SOLAPAMIENTOS)
             var zonas = [];
             layer_riesgo.eachLayer(l => { if (turf.booleanPointInPolygon(pt, l.feature)) zonas.push(l.feature.properties.descriptio.toUpperCase()); });
             if (zonas.length > 0) { sideHtml += `<div class="info-card riesgo-box"><strong>🌋 RIESGOS DETECTADOS:</strong><br>${zonas.join(" / ")}</div>`; }
 
             if (fPredio) {
                 var p = fPredio.properties;
-                var sector = getProp(p, ['ZONA', 'SECTOR', 'LUGAR']); // Extrae la Zona de Subdivisiones
+                var nRecRaw = getProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION']);
+                var nRec = nRecRaw;
+                if (!isNaN(parseInt(nRecRaw)) && String(nRecRaw).length === 4 && parseInt(nRecRaw) >= 1900 && parseInt(nRecRaw) <= 2026) nRec = "SIN INFORMACIÓN";
+                
                 var casas = 0; clusterV.eachLayer(v => { if (turf.booleanPointInPolygon([v.getLatLng().lng, v.getLatLng().lat], fPredio)) casas++; });
                 
                 sideHtml += `<div class="info-card predio-box"><strong>📑 FICHA PREDIAL</strong><hr>
                     <div class="data-row"><span class="data-label">ROL:</span><span class="data-value">${getProp(p, ['ROL'])}</span></div>
-                    <div class="data-row"><span class="data-label">ZONA / SECTOR:</span><span class="data-value">${sector}</span></div>
+                    <div class="data-row"><span class="data-label">ZONA / SECTOR:</span><span class="data-value">${getProp(p, ['ZONA', 'SECTOR'])}</span></div>
                     <div class="data-row"><span class="data-label">VIVIENDAS:</span><span class="data-value">${casas}</span></div>
-                    <div class="data-row"><span class="data-label">NÚM. APROBACIÓN:</span><span class="data-value">${getProp(p, ['APROBACION', 'N_APROB'])}</span></div></div>`;
+                    <div class="data-row"><span class="data-label">NÚM. APROBACIÓN:</span><span class="data-value">${getProp(p, ['APROBACION', 'N_APROB'])}</span></div>
+                    <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div></div>`;
             }
             document.getElementById('content-display').innerHTML = sideHtml;
         }
