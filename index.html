@@ -23,17 +23,13 @@
             #stats-overlay { position: absolute; top: 20px; left: 60px; z-index: 1000; background: rgba(0, 40, 60, 0.85); color: #00ffcc; padding: 15px; border-radius: 8px; border: 1px solid #00ffcc; backdrop-filter: blur(5px); pointer-events: none; }
             .stat-value { font-size: 18px; font-weight: 900; }
 
-            /* POPUPS TÁCTICOS PET */
             .leaflet-popup-content-wrapper { background: #00283c !important; color: #fff !important; border: 2px solid #00ffcc; border-radius: 8px; }
             .leaflet-popup-tip { background: #00ffcc !important; }
             .pet-popup-title { color: #00ffcc; font-weight: 800; text-transform: uppercase; font-size: 11px; border-bottom: 1px solid rgba(0, 255, 204, 0.3); margin-bottom: 8px; display: block; }
             .pet-popup-desc { font-size: 13px; font-weight: 600; }
 
-            /* ESTÉTICA DE CLÚSTERES RESTAURADA */
             .cluster-dynamic { border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid #fff; color: white; font-weight: 900; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
-            .c-low { background: #fb8c00; }     /* NARANJA */
-            .c-med { background: #f4511e; }     /* NARANJA OSCURO */
-            .c-high { background: #b71c1c; }    /* ROJO TÁCTICO */
+            .c-low { background: #fb8c00; } .c-med { background: #f4511e; } .c-high { background: #b71c1c; }
 
             .info-card { background: #fff; border: 1px solid #e0e0e0; border-radius: 6px; padding: 12px; margin-bottom: 15px; border-left: 6px solid #999; }
             .riesgo-box { border-left-color: #ff0000; background: #fffbfb; }
@@ -45,6 +41,8 @@
             .data-value { color: #000; font-weight: bold; font-size: 11px; }
 
             .pet-human-icon { width: 36px; height: 36px; background: #00ffcc; border: 2px solid #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 15px rgba(0, 255, 204, 0.8); cursor: pointer; }
+            .suggestion-item { padding: 10px; cursor: pointer; border-bottom: 1px solid #eee; font-size: 12px; font-weight: bold; }
+            .suggestion-item:hover { background: #f0fdfd; color: #007d7d; }
         </style>
     </head>
     <body>
@@ -59,13 +57,13 @@
             <div id="side-panel">
                 <div id="panel-content">
                     <div style="border-bottom:4px solid #00ffcc; padding-bottom:10px; margin-bottom:15px; color:#007bb5; text-transform:uppercase; font-weight:800; font-size:16px; text-align:center;">GESTIÓN RIESGO VILLARRICA</div>
-                    <div id="content-display"><p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.</p></div>
+                    <div id="content-display"><p style="text-align:center; color:#999; margin-top:80px;">SISTEMA ACTIVO.<br>Haga clic en el mapa para obtener información.</p></div>
                 </div>
                 <div id="search-section">
                     <input type="text" id="coord-input" class="search-input" placeholder="Lat, Lng (GPS)">
                     <button class="coord-btn" style="margin-bottom:10px" onclick="buscarCoordenadas()">Ir a Posición</button>
                     <div style="position:relative">
-                        <div id="suggestions" style="position:absolute; bottom:100%; left:0; width:100%; background:white; max-height:150px; overflow-y:auto; display:none; border-radius:4px; box-shadow:0 -4px 10px rgba(0,0,0,0.3); z-index:3001;"></div>
+                        <div id="suggestions" class="suggestions-list" style="position:absolute; bottom:100%; left:0; width:100%; background:white; max-height:150px; overflow-y:auto; display:none; border-radius:4px; box-shadow:0 -4px 10px rgba(0,0,0,0.3); z-index:3001;"></div>
                         <input type="text" id="rol-search" class="search-input" placeholder="Buscar ROL..." oninput="filtrarRoles()">
                     </div>
                 </div>
@@ -73,7 +71,7 @@
         </div>
 
         <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
-        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/leaflet.markercluster.js"></script>
+        <script src="https://unpkg.com/leaflet.markercluster@1.4.1/dist/MarkerCluster.js"></script>
         <script src="https://unpkg.com/@turf/turf@6/turf.min.js"></script> 
 
         <script src="data/riesgo_volcan_zonas_3.js"></script>
@@ -122,7 +120,6 @@
             pointToLayer: (f, latlng) => L.marker(latlng, { icon: L.divIcon({ html: '🏠', className: '', iconSize: [20, 20] }) })
         });
 
-        // RE-IMPLEMENTACIÓN DE CLÚSTERES TÁCTICOS
         var clusterV = L.markerClusterGroup({ 
             maxClusterRadius: 80,
             iconCreateFunction: c => {
@@ -163,8 +160,6 @@
 
             if (fPredio) {
                 var p = fPredio.properties;
-                var nRecRaw = getProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION']);
-                var nRec = (String(nRecRaw).length === 4 && parseInt(nRecRaw) >= 1900) ? "Sin información" : nRecRaw;
                 var casas = 0;
                 layer_viviendas.eachLayer(v => { if (turf.booleanPointInPolygon(turf.point([v.getLatLng().lng, v.getLatLng().lat]), fPredio)) casas++; });
                 
@@ -173,7 +168,7 @@
                     <div class="data-row"><span class="data-label">ZONA / SECTOR:</span><span class="data-value">${getProp(p, ['ZONA', 'SECTOR'])}</span></div>
                     <div class="data-row"><span class="data-label">VIVIENDAS EN PREDIO:</span><span class="data-value">${casas}</span></div>
                     <div class="data-row"><span class="data-label">NÚM. APROBACIÓN:</span><span class="data-value">${getProp(p, ['APROBACION', 'N_APROB'])}</span></div>
-                    <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${nRec}</span></div></div>`;
+                    <div class="data-row"><span class="data-label">NÚMERO RECEPCIÓN:</span><span class="data-value">${getProp(p, ['NUMERO_REC', 'NUM_REC', 'RECEPCION'])}</span></div></div>`;
             }
             document.getElementById('content-display').innerHTML = sideHtml || "<p style='text-align:center; padding-top:20px'>Punto sin datos específicos.</p>";
         }
@@ -208,7 +203,7 @@
             var matches = [];
             layer_predios.eachLayer(l => { 
                 var r = String(getProp(l.feature.properties, ['ROL'])).toUpperCase();
-                if (r.includes(val) && matches.length < 5) matches.push({r: r, id: L.stamp(l)});
+                if (r.includes(val) && matches.length < 8) matches.push({r: r, id: L.stamp(l)});
             });
             if (matches.length > 0) {
                 sug.style.display = 'block';
